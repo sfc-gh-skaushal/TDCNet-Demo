@@ -1,0 +1,15 @@
+{
+  "document_id": "SOP-001",
+  "title": "Cable Fault Resolution Procedures",
+  "category": "Cable Fault",
+  "equipment_types": [
+    "Cisco cBR-8",
+    "Arris E6000"
+  ],
+  "fault_codes": [
+    "812.3",
+    "813.1",
+    "814.2"
+  ],
+  "content": "\nCABLE FAULT RESOLUTION - ERROR CODE 812.3\n\nSAFETY FIRST:\n1. Ensure proper PPE (hard hat, safety vest, gloves)\n2. Check for electrical hazards before accessing equipment\n3. Notify traffic control if working near roadways\n\nDIAGNOSTIC STEPS:\n1. Verify fault code 812.3 on Cisco cBR-8 router display\n2. Check signal levels using spectrum analyzer\n   - Forward path: Should be -7 to +7 dBmV\n   - Return path: Should be 16 to 54 dBmV\n3. Perform cable continuity test using TDR (Time Domain Reflectometer)\n4. Identify fault location within 2-meter accuracy\n\nREPAIR PROCEDURE:\n1. Isolate affected cable segment\n2. If underground cable:\n   - Contact utility marking service (mandatory)\n   - Use cable locator to trace exact path\n   - Excavate carefully using hand tools near cable\n3. If aerial cable:\n   - Inspect for physical damage, animal interference\n   - Check guy wires and support structures\n4. Replace damaged cable section with approved splice kit\n5. Test signal integrity before restoration\n6. Document GPS coordinates of repair location\n\nVERIFICATION:\n1. Confirm error code 812.3 clears from system\n2. Test downstream signal levels at customer premises\n3. Verify no packet loss over 15-minute test period\n4. Update network topology database\n\nESTIMATED TIME: 4-8 hours depending on access complexity\nREQUIRED SKILLS: Cable splicing certification, TDR operation\nTOOLS REQUIRED: TDR, spectrum analyzer, splice kit, excavation tools\n        "
+}
