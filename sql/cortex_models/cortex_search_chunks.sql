@@ -46,8 +46,8 @@ CREATE OR REPLACE CORTEX SEARCH SERVICE SOP_CHUNKS_SEARCH_SERVICE
 GRANT USAGE ON CORTEX SEARCH SERVICE SOP_CHUNKS_SEARCH_SERVICE TO ROLE PUBLIC;
 */
 
--- Function to search chunks with filters (Simulated Cortex Search)
-CREATE OR REPLACE FUNCTION SEARCH_SOP_CHUNKS(
+-- Stored procedure to search chunks with filters (Simulated Cortex Search)
+CREATE OR REPLACE PROCEDURE SEARCH_SOP_CHUNKS(
     QUERY_TEXT VARCHAR,
     CHUNK_TYPE VARCHAR DEFAULT NULL,
     DOCUMENT_CATEGORY VARCHAR DEFAULT NULL,
@@ -70,59 +70,66 @@ RETURNS TABLE (
 LANGUAGE SQL
 AS
 $$
-    SELECT
-        c.CHUNK_ID,
-        c.DOCUMENT_ID,
-        m.TITLE AS DOCUMENT_TITLE,
-        m.CATEGORY,
-        c.CHUNK_TEXT,
-        c.CHUNK_TYPE,
-        c.SECTION_NAME,
-        c.PAGE_NUMBER,
-        c.CHUNK_SEQUENCE,
-        -- Simulate relevance scoring based on text matching
-        CASE 
-            WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.9
-            WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(QUERY_TEXT, ' ', 1)) || '%' THEN 0.7
-            WHEN UPPER(c.SECTION_NAME) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.6
-            WHEN UPPER(m.TITLE) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.5
-            ELSE 0.3
-        END AS RELEVANCE_SCORE,
-        CASE 
-            WHEN EQUIPMENT_TYPE IS NOT NULL THEN 
-                ARRAYS_OVERLAP(m.EQUIPMENT_TYPES, ARRAY_CONSTRUCT(EQUIPMENT_TYPE))
-            ELSE TRUE
-        END AS EQUIPMENT_MATCH
-    FROM SOP_DOCUMENT_CHUNKS c
-    JOIN SOP_DOCUMENT_METADATA m ON c.DOCUMENT_ID = m.DOCUMENT_ID
-    WHERE m.IS_ACTIVE = TRUE 
-      AND c.IS_MEANINGFUL = TRUE
-      AND LENGTH(TRIM(c.CHUNK_TEXT)) > 20
-      -- Apply filters
-      AND (CHUNK_TYPE IS NULL OR c.CHUNK_TYPE = CHUNK_TYPE)
-      AND (DOCUMENT_CATEGORY IS NULL OR m.CATEGORY = DOCUMENT_CATEGORY)
-      -- Equipment filter
-      AND (EQUIPMENT_TYPE IS NULL OR ARRAYS_OVERLAP(m.EQUIPMENT_TYPES, ARRAY_CONSTRUCT(EQUIPMENT_TYPE)))
-      -- Text search simulation
-      AND (
-          UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(QUERY_TEXT) || '%'
-          OR UPPER(c.SECTION_NAME) LIKE '%' || UPPER(QUERY_TEXT) || '%'
-          OR UPPER(m.TITLE) LIKE '%' || UPPER(QUERY_TEXT) || '%'
-          OR UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(QUERY_TEXT, ' ', 1)) || '%'
-      )
-    ORDER BY 
-        CASE 
-            WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.9
-            WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(QUERY_TEXT, ' ', 1)) || '%' THEN 0.7
-            WHEN UPPER(c.SECTION_NAME) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.6
-            WHEN UPPER(m.TITLE) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.5
-            ELSE 0.3
-        END DESC
-    LIMIT RESULT_LIMIT
+DECLARE
+    res RESULTSET;
+BEGIN
+    res := (
+        SELECT
+            c.CHUNK_ID,
+            c.DOCUMENT_ID,
+            m.TITLE AS DOCUMENT_TITLE,
+            m.CATEGORY,
+            c.CHUNK_TEXT,
+            c.CHUNK_TYPE,
+            c.SECTION_NAME,
+            c.PAGE_NUMBER,
+            c.CHUNK_SEQUENCE,
+            -- Simulate relevance scoring based on text matching
+            CASE 
+                WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(:QUERY_TEXT) || '%' THEN 0.9
+                WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(:QUERY_TEXT, ' ', 1)) || '%' THEN 0.7
+                WHEN UPPER(c.SECTION_NAME) LIKE '%' || UPPER(:QUERY_TEXT) || '%' THEN 0.6
+                WHEN UPPER(m.TITLE) LIKE '%' || UPPER(:QUERY_TEXT) || '%' THEN 0.5
+                ELSE 0.3
+            END AS RELEVANCE_SCORE,
+            CASE 
+                WHEN :EQUIPMENT_TYPE IS NOT NULL THEN 
+                    ARRAYS_OVERLAP(m.EQUIPMENT_TYPES, ARRAY_CONSTRUCT(:EQUIPMENT_TYPE))
+                ELSE TRUE
+            END AS EQUIPMENT_MATCH
+        FROM SOP_DOCUMENT_CHUNKS c
+        JOIN SOP_DOCUMENT_METADATA m ON c.DOCUMENT_ID = m.DOCUMENT_ID
+        WHERE m.IS_ACTIVE = TRUE 
+          AND c.IS_MEANINGFUL = TRUE
+          AND LENGTH(TRIM(c.CHUNK_TEXT)) > 20
+          -- Apply filters
+          AND (:CHUNK_TYPE IS NULL OR c.CHUNK_TYPE = :CHUNK_TYPE)
+          AND (:DOCUMENT_CATEGORY IS NULL OR m.CATEGORY = :DOCUMENT_CATEGORY)
+          -- Equipment filter
+          AND (:EQUIPMENT_TYPE IS NULL OR ARRAYS_OVERLAP(m.EQUIPMENT_TYPES, ARRAY_CONSTRUCT(:EQUIPMENT_TYPE)))
+          -- Text search simulation
+          AND (
+              UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(:QUERY_TEXT) || '%'
+              OR UPPER(c.SECTION_NAME) LIKE '%' || UPPER(:QUERY_TEXT) || '%'
+              OR UPPER(m.TITLE) LIKE '%' || UPPER(:QUERY_TEXT) || '%'
+              OR UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(:QUERY_TEXT, ' ', 1)) || '%'
+          )
+        ORDER BY 
+            CASE 
+                WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(:QUERY_TEXT) || '%' THEN 0.9
+                WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(:QUERY_TEXT, ' ', 1)) || '%' THEN 0.7
+                WHEN UPPER(c.SECTION_NAME) LIKE '%' || UPPER(:QUERY_TEXT) || '%' THEN 0.6
+                WHEN UPPER(m.TITLE) LIKE '%' || UPPER(:QUERY_TEXT) || '%' THEN 0.5
+                ELSE 0.3
+            END DESC
+        LIMIT :RESULT_LIMIT
+    );
+    RETURN TABLE(res);
+END;
 $$;
 
--- Function to get contextual chunks (surrounding chunks for better context)
-CREATE OR REPLACE FUNCTION GET_CONTEXTUAL_CHUNKS(
+-- Stored procedure to get contextual chunks (surrounding chunks for better context)
+CREATE OR REPLACE PROCEDURE GET_CONTEXTUAL_CHUNKS(
     TARGET_CHUNK_ID VARCHAR,
     CONTEXT_WINDOW INTEGER DEFAULT 2
 )
@@ -138,24 +145,31 @@ RETURNS TABLE (
 LANGUAGE SQL
 AS
 $$
-    SELECT
-        c.CHUNK_ID,
-        c.DOCUMENT_ID,
-        c.CHUNK_SEQUENCE,
-        c.CHUNK_TEXT,
-        c.CHUNK_TYPE,
-        c.CHUNK_ID = TARGET_CHUNK_ID AS IS_TARGET_CHUNK,
-        ABS(c.CHUNK_SEQUENCE - t.CHUNK_SEQUENCE) AS DISTANCE_FROM_TARGET
-    FROM SOP_DOCUMENT_CHUNKS c
-    JOIN (
-        SELECT DOCUMENT_ID, CHUNK_SEQUENCE
-        FROM SOP_DOCUMENT_CHUNKS
-        WHERE CHUNK_ID = TARGET_CHUNK_ID
-    ) t ON c.DOCUMENT_ID = t.DOCUMENT_ID
-    WHERE c.CHUNK_SEQUENCE BETWEEN 
-        t.CHUNK_SEQUENCE - CONTEXT_WINDOW AND 
-        t.CHUNK_SEQUENCE + CONTEXT_WINDOW
-    ORDER BY c.CHUNK_SEQUENCE
+DECLARE
+    res RESULTSET;
+BEGIN
+    res := (
+        SELECT
+            c.CHUNK_ID,
+            c.DOCUMENT_ID,
+            c.CHUNK_SEQUENCE,
+            c.CHUNK_TEXT,
+            c.CHUNK_TYPE,
+            c.CHUNK_ID = :TARGET_CHUNK_ID AS IS_TARGET_CHUNK,
+            ABS(c.CHUNK_SEQUENCE - t.CHUNK_SEQUENCE) AS DISTANCE_FROM_TARGET
+        FROM SOP_DOCUMENT_CHUNKS c
+        JOIN (
+            SELECT DOCUMENT_ID, CHUNK_SEQUENCE
+            FROM SOP_DOCUMENT_CHUNKS
+            WHERE CHUNK_ID = :TARGET_CHUNK_ID
+        ) t ON c.DOCUMENT_ID = t.DOCUMENT_ID
+        WHERE c.CHUNK_SEQUENCE BETWEEN 
+            t.CHUNK_SEQUENCE - :CONTEXT_WINDOW AND 
+            t.CHUNK_SEQUENCE + :CONTEXT_WINDOW
+        ORDER BY c.CHUNK_SEQUENCE
+    );
+    RETURN TABLE(res);
+END;
 $$;
 
 -- AI-powered question answering (Simplified version without Cortex LLM)
@@ -230,8 +244,8 @@ $$
     )
 $$;
 
--- Function to find similar faults based on chunk similarity
-CREATE OR REPLACE FUNCTION FIND_SIMILAR_FAULTS(
+-- Stored procedure to find similar faults based on chunk similarity
+CREATE OR REPLACE PROCEDURE FIND_SIMILAR_FAULTS(
     FAULT_DESCRIPTION VARCHAR,
     SIMILARITY_THRESHOLD FLOAT DEFAULT 0.3,
     RESULT_LIMIT INTEGER DEFAULT 5
@@ -249,19 +263,54 @@ RETURNS TABLE (
 LANGUAGE SQL
 AS
 $$
-    SELECT DISTINCT
-        c.DOCUMENT_ID,
-        c.DOCUMENT_TITLE,
-        c.CATEGORY,
-        c.CHUNK_TEXT AS SIMILAR_CHUNK_TEXT,
-        c.CHUNK_TYPE,
-        c.RELEVANCE_SCORE,
-        c.EQUIPMENT_TYPES,
-        c.FAULT_CODES
-    FROM TABLE(SEARCH_SOP_CHUNKS(FAULT_DESCRIPTION, NULL, NULL, NULL, RESULT_LIMIT * 3)) c
-    WHERE c.RELEVANCE_SCORE >= SIMILARITY_THRESHOLD
-    ORDER BY c.RELEVANCE_SCORE DESC
-    LIMIT RESULT_LIMIT
+DECLARE
+    res RESULTSET;
+BEGIN
+    res := (
+        SELECT DISTINCT
+            c.DOCUMENT_ID,
+            m.TITLE AS DOCUMENT_TITLE,
+            m.CATEGORY,
+            c.CHUNK_TEXT AS SIMILAR_CHUNK_TEXT,
+            c.CHUNK_TYPE,
+            CASE 
+                WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(:FAULT_DESCRIPTION) || '%' THEN 0.9
+                WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(:FAULT_DESCRIPTION, ' ', 1)) || '%' THEN 0.7
+                WHEN UPPER(c.SECTION_NAME) LIKE '%' || UPPER(:FAULT_DESCRIPTION) || '%' THEN 0.6
+                WHEN UPPER(m.TITLE) LIKE '%' || UPPER(:FAULT_DESCRIPTION) || '%' THEN 0.5
+                ELSE 0.3
+            END AS RELEVANCE_SCORE,
+            m.EQUIPMENT_TYPES,
+            m.FAULT_CODES
+        FROM SOP_DOCUMENT_CHUNKS c
+        JOIN SOP_DOCUMENT_METADATA m ON c.DOCUMENT_ID = m.DOCUMENT_ID
+        WHERE m.IS_ACTIVE = TRUE 
+          AND c.IS_MEANINGFUL = TRUE
+          AND (
+              UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(:FAULT_DESCRIPTION) || '%'
+              OR UPPER(c.SECTION_NAME) LIKE '%' || UPPER(:FAULT_DESCRIPTION) || '%'
+              OR UPPER(m.TITLE) LIKE '%' || UPPER(:FAULT_DESCRIPTION) || '%'
+              OR UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(:FAULT_DESCRIPTION, ' ', 1)) || '%'
+          )
+          AND CASE 
+                WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(:FAULT_DESCRIPTION) || '%' THEN 0.9
+                WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(:FAULT_DESCRIPTION, ' ', 1)) || '%' THEN 0.7
+                WHEN UPPER(c.SECTION_NAME) LIKE '%' || UPPER(:FAULT_DESCRIPTION) || '%' THEN 0.6
+                WHEN UPPER(m.TITLE) LIKE '%' || UPPER(:FAULT_DESCRIPTION) || '%' THEN 0.5
+                ELSE 0.3
+              END >= :SIMILARITY_THRESHOLD
+        ORDER BY 
+            CASE 
+                WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(:FAULT_DESCRIPTION) || '%' THEN 0.9
+                WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(:FAULT_DESCRIPTION, ' ', 1)) || '%' THEN 0.7
+                WHEN UPPER(c.SECTION_NAME) LIKE '%' || UPPER(:FAULT_DESCRIPTION) || '%' THEN 0.6
+                WHEN UPPER(m.TITLE) LIKE '%' || UPPER(:FAULT_DESCRIPTION) || '%' THEN 0.5
+                ELSE 0.3
+            END DESC
+        LIMIT :RESULT_LIMIT
+    );
+    RETURN TABLE(res);
+END;
 $$;
 
 -- Test the Simulated Search Functions
@@ -269,14 +318,8 @@ SELECT 'Testing Simulated Cortex Search on Chunked Data:' AS TEST_STATUS;
 
 -- Test basic search
 SELECT 'Basic Search Test - Cable Fault:' AS TEST_NAME;
-SELECT 
-    CHUNK_ID,
-    DOCUMENT_TITLE,
-    CHUNK_TYPE,
-    SUBSTR(CHUNK_TEXT, 1, 100) || '...' AS CHUNK_PREVIEW,
-    RELEVANCE_SCORE
-FROM TABLE(SEARCH_SOP_CHUNKS('cable fault resolution', NULL, NULL, NULL, 3))
-ORDER BY RELEVANCE_SCORE DESC;
+-- Note: Use CALL to execute stored procedures
+-- CALL SEARCH_SOP_CHUNKS('cable fault resolution', NULL, NULL, NULL, 3);
 
 -- Test AI question answering
 SELECT 'AI Question Answering Test:' AS TEST_NAME;
