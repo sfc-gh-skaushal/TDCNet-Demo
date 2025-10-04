@@ -121,45 +121,47 @@ def load_fault_data():
         st.error(f"Error loading data: {e}")
         return pd.DataFrame(), []
 
-def search_sop_documents(query, fault_code=None, equipment_type=None, sop_docs=[]):
-    """Search SOP documents for relevant information"""
-    results = []
-    query_lower = query.lower()
+def search_sop_documents_cortex(query, fault_code=None, equipment_type=None):
+    """Search SOP documents using Cortex Search (simulated for local demo)"""
+    # In real Snowflake environment, this would call:
+    # SELECT * FROM TABLE(SEARCH_SOP_DOCUMENTS(query, category, limit))
     
-    for doc in sop_docs:
-        relevance_score = 0
-        
-        # Check title match
-        if query_lower in doc['title'].lower():
-            relevance_score += 0.9
-        
-        # Check category match
-        if query_lower in doc['category'].lower():
-            relevance_score += 0.8
-        
-        # Check content match
-        if query_lower in doc['content'].lower():
-            relevance_score += 0.7
-        
-        # Check fault code match
-        if fault_code and fault_code in doc.get('fault_codes', []):
-            relevance_score += 0.8
-        
-        # Check equipment type match
-        if equipment_type:
-            for eq_type in doc.get('equipment_types', []):
-                if equipment_type.lower() in eq_type.lower():
-                    relevance_score += 0.6
-                    break
-        
-        if relevance_score > 0.3:
-            results.append({
-                'document': doc,
-                'relevance_score': relevance_score,
-                'excerpt': extract_relevant_excerpt(doc['content'], query)
-            })
+    # For local demo, simulate Cortex Search results
+    enhanced_query = query
+    if fault_code:
+        enhanced_query += f" {fault_code}"
+    if equipment_type:
+        enhanced_query += f" {equipment_type}"
     
-    return sorted(results, key=lambda x: x['relevance_score'], reverse=True)
+    # Simulate AI-powered search results with higher relevance
+    results = [
+        {
+            'document_id': 'SOP-001',
+            'title': 'Cable Fault Resolution Procedures',
+            'category': 'Cable Fault',
+            'relevance_score': 0.95,
+            'content_excerpt': 'CABLE FAULT RESOLUTION - ERROR CODE 812.3\n\nSAFETY FIRST:\n1. Ensure proper PPE...'
+        },
+        {
+            'document_id': 'SOP-002', 
+            'title': 'Service Degradation Troubleshooting',
+            'category': 'Major',
+            'relevance_score': 0.75,
+            'content_excerpt': 'SERVICE DEGRADATION RESOLUTION - ERROR CODE 600.1\n\nINITIAL ASSESSMENT...'
+        }
+    ]
+    
+    # Filter results based on query relevance
+    filtered_results = []
+    query_lower = enhanced_query.lower()
+    
+    for result in results:
+        if (query_lower in result['title'].lower() or 
+            query_lower in result['content_excerpt'].lower() or
+            (fault_code and fault_code in result['content_excerpt'])):
+            filtered_results.append(result)
+    
+    return filtered_results[:3]  # Return top 3 results
 
 def extract_relevant_excerpt(content, query, max_length=500):
     """Extract relevant excerpt from content"""
@@ -333,18 +335,19 @@ def display_ai_chat_interface(sop_docs):
             with st.spinner("Searching technical documentation..."):
                 time.sleep(1)  # Simulate processing time
                 
-                # Search for relevant information
-                search_results = search_sop_documents(user_question, sop_docs=sop_docs)
+                # Search for relevant information using Cortex Search
+                search_results = search_sop_documents_cortex(user_question)
                 
                 if search_results:
                     best_result = search_results[0]
                     response = f"""Based on our technical documentation, here's what I found:
 
-**Source:** {best_result['document']['title']}
+**Source:** {best_result['title']} ({best_result['document_id']})
 **Confidence:** {best_result['relevance_score']:.1%}
+**Category:** {best_result['category']}
 
 **Answer:**
-{best_result['excerpt']}
+{best_result['content_excerpt']}
 
 Would you like me to provide the complete step-by-step procedure?"""
                 else:

@@ -109,22 +109,32 @@ SELECT COUNT(*) FROM VW_NETWORK_FAULTS_ENHANCED;
 -- Copy and paste contents from: sql/cortex_models/fault_classification.sql
 ```
 
-### 3.2 Deploy Search Functions  
+### 3.2 Deploy Cortex Search Service  
 ```sql
 -- Execute Cortex Search setup
 -- Copy and paste contents from: sql/cortex_models/cortex_search_setup.sql
+-- Note: This creates a proper Cortex Search Service using Snowflake's native capabilities
 ```
+
+**Important:** The Cortex Search Service creation may take several minutes to complete as it builds the search index. Monitor the progress and wait for completion before proceeding.
 
 ### 3.3 Test AI Functions
 ```sql
 -- Test fault classification
 SELECT CLASSIFY_FAULT('812.3', 'COAX', 'Cisco cBR-8', 'Copenhagen Central', 1000, 50, 14, 3, TRUE) AS PREDICTED_CATEGORY;
 
--- Test SOP search
-SELECT * FROM TABLE(SEARCH_SOP_DOCUMENTS('cable fault 812.3'));
+-- Test Cortex Search Service
+SELECT * FROM TABLE(SEARCH_SOP_DOCUMENTS('cable fault 812.3 Cisco', NULL, 3));
 
--- Test procedure generation
-SELECT GENERATE_REPAIR_PROCEDURE('812.3', 'Cisco cBR-8', 'Cable cut detected') AS PROCEDURE;
+-- Test AI-powered answer extraction
+SELECT ASK_TECHNICAL_QUESTION('How to fix cable fault 812.3 on Cisco equipment?') AS AI_ANSWER;
+
+-- Test AI procedure generation
+SELECT GENERATE_REPAIR_PROCEDURE('812.3', 'Cisco cBR-8', 'Cable cut detected') AS AI_PROCEDURE;
+
+-- Verify Cortex Search Service status
+SHOW CORTEX SEARCH SERVICES;
+DESCRIBE CORTEX SEARCH SERVICE SOP_SEARCH_SERVICE;
 ```
 
 ---
