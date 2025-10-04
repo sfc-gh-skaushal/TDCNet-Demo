@@ -648,12 +648,15 @@ def main():
         st.markdown("### 📚 Available Procedures")
         
         if sop_docs:
-            for doc in sop_docs:
-                doc_id = doc.get('document_id', 'UNKNOWN')
+            for idx, doc in enumerate(sop_docs):
+                doc_id = doc.get('document_id', f'UNKNOWN_{idx}')
                 doc_title = doc.get('title', 'Untitled Document')
                 doc_category = doc.get('category', 'General')
                 doc_equipment = doc.get('equipment_types', [])
                 doc_fault_codes = doc.get('fault_codes', [])
+                
+                # Create unique key using index to prevent duplicates
+                unique_key = f"view_{doc_id}_{idx}"
                 
                 with st.expander(f"{doc_id} - {doc_title}"):
                     st.markdown(f"**Category:** {doc_category}")
@@ -670,7 +673,7 @@ def main():
                     else:
                         st.markdown("**Fault Codes:** Not specified")
                     
-                    if st.button(f"View Procedure", key=f"view_{doc_id}"):
+                    if st.button(f"View Procedure", key=unique_key):
                         content = doc.get('content', 'Content not available for this document')
                         st.text(content)
         else:
