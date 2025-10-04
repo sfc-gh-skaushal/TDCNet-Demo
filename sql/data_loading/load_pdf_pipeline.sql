@@ -12,61 +12,71 @@ USE WAREHOUSE SID_WH;
 CALL REFRESH_PDF_FILES();
 
 -- Step 3: Insert sample PDF file data (simulating uploaded files)
-INSERT INTO SOP_PDF_FILES (
-    FILE_PATH, FILE_URL, FILE_SIZE, LAST_MODIFIED, ETAG, MD5
-) VALUES 
-('SOP-001_Cable_Fault_Resolution_Procedures.pdf', 
- 'sfc-demo-stage/sop-001.pdf', 3980, CURRENT_TIMESTAMP()::TIMESTAMP_NTZ, 
- 'abc123def456', 'a1b2c3d4e5f6'),
-('SOP-002_Service_Degradation_Troubleshooting.pdf', 
- 'sfc-demo-stage/sop-002.pdf', 3861, CURRENT_TIMESTAMP()::TIMESTAMP_NTZ, 
- 'def456ghi789', 'b2c3d4e5f6g7'),
-('SOP-003_Signal_Level_Adjustment_Procedures.pdf', 
- 'sfc-demo-stage/sop-003.pdf', 3755, CURRENT_TIMESTAMP()::TIMESTAMP_NTZ, 
- 'ghi789jkl012', 'c3d4e5f6g7h8'),
-('SOP-004_Emergency_Network_Response_Procedures.pdf', 
- 'sfc-demo-stage/sop-004.pdf', 3666, CURRENT_TIMESTAMP()::TIMESTAMP_NTZ, 
- 'jkl012mno345', 'd4e5f6g7h8i9'),
-('SOP-005_Network_Security_Incident_Response.pdf', 
- 'sfc-demo-stage/sop-005.pdf', 3522, CURRENT_TIMESTAMP()::TIMESTAMP_NTZ, 
- 'mno345pqr678', 'e5f6g7h8i9j0')
-ON CONFLICT (FILE_PATH) DO NOTHING;
+-- Insert sample PDF file data using MERGE to handle conflicts
+MERGE INTO SOP_PDF_FILES AS target
+USING (
+    SELECT * FROM VALUES
+    ('SOP-001_Cable_Fault_Resolution_Procedures.pdf', 
+     'sfc-demo-stage/sop-001.pdf', 3980, CURRENT_TIMESTAMP()::TIMESTAMP_NTZ, 
+     'abc123def456', 'a1b2c3d4e5f6'),
+    ('SOP-002_Service_Degradation_Troubleshooting.pdf', 
+     'sfc-demo-stage/sop-002.pdf', 3861, CURRENT_TIMESTAMP()::TIMESTAMP_NTZ, 
+     'def456ghi789', 'b2c3d4e5f6g7'),
+    ('SOP-003_Signal_Level_Adjustment_Procedures.pdf', 
+     'sfc-demo-stage/sop-003.pdf', 3755, CURRENT_TIMESTAMP()::TIMESTAMP_NTZ, 
+     'ghi789jkl012', 'c3d4e5f6g7h8'),
+    ('SOP-004_Emergency_Network_Response_Procedures.pdf', 
+     'sfc-demo-stage/sop-004.pdf', 3666, CURRENT_TIMESTAMP()::TIMESTAMP_NTZ, 
+     'jkl012mno345', 'd4e5f6g7h8i9'),
+    ('SOP-005_Network_Security_Incident_Response.pdf', 
+     'sfc-demo-stage/sop-005.pdf', 3522, CURRENT_TIMESTAMP()::TIMESTAMP_NTZ, 
+     'mno345pqr678', 'e5f6g7h8i9j0')
+) AS source (FILE_PATH, FILE_URL, FILE_SIZE, LAST_MODIFIED, ETAG, MD5)
+ON target.FILE_PATH = source.FILE_PATH
+WHEN NOT MATCHED THEN
+    INSERT (FILE_PATH, FILE_URL, FILE_SIZE, LAST_MODIFIED, ETAG, MD5)
+    VALUES (source.FILE_PATH, source.FILE_URL, source.FILE_SIZE, 
+            source.LAST_MODIFIED, source.ETAG, source.MD5);
 
--- Step 4: Insert document metadata
-INSERT INTO SOP_DOCUMENT_METADATA (
-    DOCUMENT_ID, FILE_PATH, TITLE, CATEGORY, EQUIPMENT_TYPES, FAULT_CODES,
-    PAGE_COUNT, WORD_COUNT
-) VALUES 
-('SOP-001', 'SOP-001_Cable_Fault_Resolution_Procedures.pdf',
- 'Cable Fault Resolution Procedures', 'Cable Fault',
- ARRAY_CONSTRUCT('Cisco cBR-8', 'Arris E6000', 'Casa C100G'),
- ARRAY_CONSTRUCT('812.3', '813.1', '814.2', '815.5', '816.1'),
- 8, 1200),
+-- Step 4: Insert document metadata using MERGE to handle conflicts
+MERGE INTO SOP_DOCUMENT_METADATA AS target
+USING (
+    SELECT * FROM VALUES
+    ('SOP-001', 'SOP-001_Cable_Fault_Resolution_Procedures.pdf',
+     'Cable Fault Resolution Procedures', 'Cable Fault',
+     ARRAY_CONSTRUCT('Cisco cBR-8', 'Arris E6000', 'Casa C100G'),
+     ARRAY_CONSTRUCT('812.3', '813.1', '814.2', '815.5', '816.1'),
+     8, 1200),
 
-('SOP-002', 'SOP-002_Service_Degradation_Troubleshooting.pdf',
- 'Service Degradation Troubleshooting', 'Major',
- ARRAY_CONSTRUCT('Nokia 7750', 'Juniper MX960', 'Cisco ASR9000'),
- ARRAY_CONSTRUCT('600.1', '700.2', '800.3', '900.1'),
- 6, 950),
+    ('SOP-002', 'SOP-002_Service_Degradation_Troubleshooting.pdf',
+     'Service Degradation Troubleshooting', 'Major',
+     ARRAY_CONSTRUCT('Nokia 7750', 'Juniper MX960', 'Cisco ASR9000'),
+     ARRAY_CONSTRUCT('600.1', '700.2', '800.3', '900.1'),
+     6, 950),
 
-('SOP-003', 'SOP-003_Signal_Level_Adjustment_Procedures.pdf',
- 'Signal Level Adjustment Procedures', 'Minor',
- ARRAY_CONSTRUCT('Casa C100G', 'Harmonic CableOS', 'Cisco cBR-8'),
- ARRAY_CONSTRUCT('100.1', '200.2', '300.5', '400.1', '500.3'),
- 4, 650),
+    ('SOP-003', 'SOP-003_Signal_Level_Adjustment_Procedures.pdf',
+     'Signal Level Adjustment Procedures', 'Minor',
+     ARRAY_CONSTRUCT('Casa C100G', 'Harmonic CableOS', 'Cisco cBR-8'),
+     ARRAY_CONSTRUCT('100.1', '200.2', '300.5', '400.1', '500.3'),
+     4, 650),
 
-('SOP-004', 'SOP-004_Emergency_Network_Response_Procedures.pdf',
- 'Emergency Network Response Procedures', 'Emergency',
- ARRAY_CONSTRUCT('All Network Equipment'),
- ARRAY_CONSTRUCT('EMERGENCY', 'CRITICAL', 'OUTAGE'),
- 12, 1800),
+    ('SOP-004', 'SOP-004_Emergency_Network_Response_Procedures.pdf',
+     'Emergency Network Response Procedures', 'Emergency',
+     ARRAY_CONSTRUCT('All Network Equipment'),
+     ARRAY_CONSTRUCT('EMERGENCY', 'CRITICAL', 'OUTAGE'),
+     12, 1800),
 
-('SOP-005', 'SOP-005_Network_Security_Incident_Response.pdf',
- 'Network Security Incident Response', 'Security',
- ARRAY_CONSTRUCT('Firewalls', 'Routers', 'Switches', 'Monitoring Systems'),
- ARRAY_CONSTRUCT('SEC-001', 'SEC-002', 'SEC-003'),
- 10, 1400)
-ON CONFLICT (DOCUMENT_ID) DO NOTHING;
+    ('SOP-005', 'SOP-005_Network_Security_Incident_Response.pdf',
+     'Network Security Incident Response', 'Security',
+     ARRAY_CONSTRUCT('Firewalls', 'Routers', 'Switches', 'Monitoring Systems'),
+     ARRAY_CONSTRUCT('SEC-001', 'SEC-002', 'SEC-003'),
+     10, 1400)
+) AS source (DOCUMENT_ID, FILE_PATH, TITLE, CATEGORY, EQUIPMENT_TYPES, FAULT_CODES, PAGE_COUNT, WORD_COUNT)
+ON target.DOCUMENT_ID = source.DOCUMENT_ID
+WHEN NOT MATCHED THEN
+    INSERT (DOCUMENT_ID, FILE_PATH, TITLE, CATEGORY, EQUIPMENT_TYPES, FAULT_CODES, PAGE_COUNT, WORD_COUNT)
+    VALUES (source.DOCUMENT_ID, source.FILE_PATH, source.TITLE, source.CATEGORY, 
+            source.EQUIPMENT_TYPES, source.FAULT_CODES, source.PAGE_COUNT, source.WORD_COUNT);
 
 -- Step 5: Create meaningful chunks with exactly 200 characters
 -- Simulating PDF text extraction and chunking process
