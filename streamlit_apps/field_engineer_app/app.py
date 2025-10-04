@@ -647,15 +647,34 @@ def main():
     with tab3:
         st.markdown("### 📚 Available Procedures")
         
-        for doc in sop_docs:
-            with st.expander(f"{doc['document_id']} - {doc['title']}"):
-                st.markdown(f"**Category:** {doc['category']}")
-                st.markdown(f"**Equipment Types:** {', '.join(doc['equipment_types'])}")
-                st.markdown(f"**Fault Codes:** {', '.join(doc['fault_codes'])}")
+        if sop_docs:
+            for doc in sop_docs:
+                doc_id = doc.get('document_id', 'UNKNOWN')
+                doc_title = doc.get('title', 'Untitled Document')
+                doc_category = doc.get('category', 'General')
+                doc_equipment = doc.get('equipment_types', [])
+                doc_fault_codes = doc.get('fault_codes', [])
                 
-                if st.button(f"View Procedure", key=f"view_{doc['document_id']}"):
-                    content = doc.get('content', 'Content not available for this document')
-                    st.text(content)
+                with st.expander(f"{doc_id} - {doc_title}"):
+                    st.markdown(f"**Category:** {doc_category}")
+                    
+                    if doc_equipment:
+                        equipment_str = ', '.join(doc_equipment) if isinstance(doc_equipment, list) else str(doc_equipment)
+                        st.markdown(f"**Equipment Types:** {equipment_str}")
+                    else:
+                        st.markdown("**Equipment Types:** Not specified")
+                    
+                    if doc_fault_codes:
+                        fault_codes_str = ', '.join(doc_fault_codes) if isinstance(doc_fault_codes, list) else str(doc_fault_codes)
+                        st.markdown(f"**Fault Codes:** {fault_codes_str}")
+                    else:
+                        st.markdown("**Fault Codes:** Not specified")
+                    
+                    if st.button(f"View Procedure", key=f"view_{doc_id}"):
+                        content = doc.get('content', 'Content not available for this document')
+                        st.text(content)
+        else:
+            st.info("No SOP documents available. This is expected if the SOP document tables haven't been set up yet.")
     
     # Demo information
     with st.expander("ℹ️ Demo Information"):
