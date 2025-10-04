@@ -46,6 +46,8 @@ COMMENT = 'Stage for network fault log data';
 
 CREATE OR REPLACE STAGE SOP_DOCUMENTS_STAGE
 FILE_FORMAT = JSON_FORMAT
+DIRECTORY = (ENABLE = TRUE)
+ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
 COMMENT = 'Stage for SOP documents and technical manuals';
 
 -- Display setup completion
