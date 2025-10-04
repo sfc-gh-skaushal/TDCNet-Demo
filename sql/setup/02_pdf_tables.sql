@@ -161,30 +161,30 @@ $$
     ),
     chunk_generation AS (
         SELECT 
-            ROW_NUMBER() OVER (ORDER BY seq) AS CHUNK_SEQUENCE,
+            ROW_NUMBER() OVER (ORDER BY SEQ4()) AS CHUNK_SEQUENCE,
             -- Extract 200-character chunks
-            SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200) AS CHUNK_TEXT,
+            SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY SEQ4()) - 1) * 200) + 1, 200) AS CHUNK_TEXT,
             -- Determine chunk type based on content
             CASE 
-                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%SAFETY%' THEN 'SAFETY'
-                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%DIAGNOSTIC%' THEN 'DIAGNOSTIC'
-                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%PROCEDURE%' THEN 'PROCEDURE'
-                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%VERIFICATION%' THEN 'VERIFICATION'
-                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%REPAIR%' THEN 'PROCEDURE'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY SEQ4()) - 1) * 200) + 1, 200)) LIKE '%SAFETY%' THEN 'SAFETY'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY SEQ4()) - 1) * 200) + 1, 200)) LIKE '%DIAGNOSTIC%' THEN 'DIAGNOSTIC'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY SEQ4()) - 1) * 200) + 1, 200)) LIKE '%PROCEDURE%' THEN 'PROCEDURE'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY SEQ4()) - 1) * 200) + 1, 200)) LIKE '%VERIFICATION%' THEN 'VERIFICATION'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY SEQ4()) - 1) * 200) + 1, 200)) LIKE '%REPAIR%' THEN 'PROCEDURE'
                 ELSE 'CONTENT'
             END AS CHUNK_TYPE,
             -- Extract section name from chunk content
             CASE 
-                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%SAFETY%' THEN 'Safety Requirements'
-                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%DIAGNOSTIC%' THEN 'Diagnostic Steps'
-                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%PROCEDURE%' THEN 'Repair Procedure'
-                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%VERIFICATION%' THEN 'Verification Steps'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY SEQ4()) - 1) * 200) + 1, 200)) LIKE '%SAFETY%' THEN 'Safety Requirements'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY SEQ4()) - 1) * 200) + 1, 200)) LIKE '%DIAGNOSTIC%' THEN 'Diagnostic Steps'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY SEQ4()) - 1) * 200) + 1, 200)) LIKE '%PROCEDURE%' THEN 'Repair Procedure'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY SEQ4()) - 1) * 200) + 1, 200)) LIKE '%VERIFICATION%' THEN 'Verification Steps'
                 ELSE 'General Content'
             END AS SECTION_NAME,
-            ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1 AS CHAR_START,
-            LEAST(ROW_NUMBER() OVER (ORDER BY seq) * 200, LENGTH(FULL_TEXT)) AS CHAR_END
+            ((ROW_NUMBER() OVER (ORDER BY SEQ4()) - 1) * 200) + 1 AS CHAR_START,
+            LEAST(ROW_NUMBER() OVER (ORDER BY SEQ4()) * 200, LENGTH(FULL_TEXT)) AS CHAR_END
         FROM text_processing,
-        TABLE(GENERATOR(ROWCOUNT => (SELECT TOTAL_CHUNKS FROM text_processing))) AS seq
+        TABLE(GENERATOR(ROWCOUNT => (SELECT TOTAL_CHUNKS FROM text_processing)))
     )
     SELECT 
         CHUNK_SEQUENCE,
