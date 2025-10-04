@@ -9,6 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import numpy as np
+import snowflake.snowpark.context
 
 # Configure page
 st.set_page_config(
@@ -48,35 +49,59 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Simulate Snowflake connection (in real implementation, use snowflake-connector-python)
+# Load data from Snowflake using native Snowpark session
 @st.cache_data
 def load_fault_data():
-    """Load fault data from CSV (simulating Snowflake query)"""
+    """Load fault data from Snowflake"""
     try:
-        df = pd.read_csv('/Users/siddharthkaushal/TDCNet Demo/data/sample_fault_logs/network_faults.csv')
+        # Get Snowflake session
+        session = snowflake.snowpark.context.get_active_session()
+        
+        # Load fault data from Snowflake enhanced view
+        df = session.table("VW_NETWORK_FAULTS_ENHANCED").to_pandas()
         df['fault_timestamp'] = pd.to_datetime(df['fault_timestamp'])
         df['resolution_timestamp'] = pd.to_datetime(df['resolution_timestamp'])
         
-        # Add calculated fields (simulating the enhanced view)
-        df['hours_since_fault'] = (datetime.now() - df['fault_timestamp']).dt.total_seconds() / 3600
+        # Add calculated fields for local processing
+        df['hours_since_fault'] = (pd.Timestamp.now() - df['fault_timestamp']).dt.total_seconds() / 3600
         df['is_resolved'] = df['resolution_timestamp'].notna()
         df['created_date'] = df['fault_timestamp'].dt.date
         df['resolution_date'] = df['resolution_timestamp'].dt.date
         df['business_hours_fault'] = (
-            (df['fault_timestamp'].dt.hour.between(8, 17)) &
-            (df['fault_timestamp'].dt.dayofweek.between(1, 5))  # Monday=0, Sunday=6
+            (df['fault_timestamp'].dt.hour >= 8) & 
+            (df['fault_timestamp'].dt.hour <= 17) & 
+            (df['fault_timestamp'].dt.dayofweek < 5)  # Monday=0, Sunday=6
         )
         
-        # Simulate ML predictions
-        df['predicted_category'] = df['fault_category']  # In real app, this would come from Cortex ML
-        df['calculated_priority_score'] = df['priority_score']
+        # Load ML predictions from Snowflake views
+        try:
+            # Get fault classification and triage data
+            triage_df = session.table("VW_FAULT_TRIAGE").to_pandas()
+            
+            # Merge ML predictions with fault data
+            df = df.merge(
+                triage_df[['FAULT_ID', 'PREDICTED_CATEGORY', 'CALCULATED_PRIORITY_SCORE']], 
+                left_on='fault_id', 
+                right_on='FAULT_ID', 
+                how='left'
+            )
+            
+            # Use ML predictions or fallback to original values
+            df['predicted_category'] = df['PREDICTED_CATEGORY'].fillna(df['fault_category'])
+            df['calculated_priority_score'] = df['CALCULATED_PRIORITY_SCORE'].fillna(df['priority_score'])
+            
+        except Exception as ml_error:
+            st.warning(f"ML predictions unavailable, using original data: {ml_error}")
+            # Fallback to original values
+            df['predicted_category'] = df['fault_category']
+            df['calculated_priority_score'] = df['priority_score']
         
         # Risk level calculation
         df['risk_level'] = df['calculated_priority_score'].apply(
             lambda x: 'CRITICAL' if x > 0.8 else 'HIGH' if x > 0.6 else 'MEDIUM' if x > 0.4 else 'LOW'
         )
         
-        # SLA breach risk
+        # SLA breach risk calculation
         df['sla_breach_risk'] = (
             ((df['fault_category'] == 'Cable Fault') & (df['hours_since_fault'] > 4)) |
             ((df['fault_category'] == 'Major') & (df['hours_since_fault'] > 2)) |
@@ -84,9 +109,19 @@ def load_fault_data():
         )
         
         return df
+        
     except Exception as e:
-        st.error(f"Error loading data: {e}")
-        return pd.DataFrame()
+        st.error(f"Error loading data from Snowflake: {e}")
+        # Return empty DataFrame with proper structure for graceful degradation
+        empty_df = pd.DataFrame(columns=[
+            'fault_id', 'fault_timestamp', 'fault_category', 'fault_code', 
+            'equipment_type', 'location', 'customers_affected', 'service_calls',
+            'technician_type_required', 'resolution_timestamp', 'priority_score',
+            'is_resolved', 'hours_since_fault', 'created_date', 'resolution_date', 
+            'business_hours_fault', 'predicted_category', 'calculated_priority_score',
+            'risk_level', 'sla_breach_risk'
+        ])
+        return empty_df
 
 def create_kpi_metrics(df):
     """Create KPI metrics display"""
