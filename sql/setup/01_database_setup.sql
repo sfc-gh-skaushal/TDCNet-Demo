@@ -11,7 +11,7 @@ USE SCHEMA NETWORK_OPS;
 
 -- Create warehouse for demo workloads
 
-USE WAREHOUSE SID>_WH;
+USE WAREHOUSE SID_WH;
 
 -- Grant necessary privileges (adjust as needed for your environment)
 

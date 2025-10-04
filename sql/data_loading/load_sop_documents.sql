@@ -1,9 +1,9 @@
 -- TDC Net Snowflake Demo - Load SOP Documents
 -- Loads SOP documents and technical manuals for Cortex Search
 
-USE DATABASE TDCNET_DEMO;
+USE DATABASE TELCO_DEMO;
 USE SCHEMA NETWORK_OPS;
-USE WAREHOUSE TDCNET_DEMO_WH;
+USE WAREHOUSE SID_WH;
 
 -- Load SOP documents from JSON files
 -- First, put the JSON files into the stage

@@ -56,7 +56,7 @@ SHOW FUNCTIONS LIKE 'SNOWFLAKE.ML%';
 ### 2.1 Upload Sample Data Files
 
 #### Option A: Using Snowflake Web Interface
-1. Navigate to **Data > Databases > TDCNET_DEMO > NETWORK_OPS > Stages**
+1. Navigate to **Data > Databases > TELCO_DEMO > NETWORK_OPS > Stages**
 2. Click on **FAULT_DATA_STAGE**
 3. Click **+ Files** and upload `data/sample_fault_logs/network_faults.csv`
 4. Click on **SOP_DOCUMENTS_STAGE**  
@@ -68,10 +68,10 @@ SHOW FUNCTIONS LIKE 'SNOWFLAKE.ML%';
 # Configure connection to your Snowflake account
 
 # Upload fault data
-PUT file://data/sample_fault_logs/network_faults.csv @TDCNET_DEMO.NETWORK_OPS.FAULT_DATA_STAGE;
+PUT file://data/sample_fault_logs/network_faults.csv @TELCO_DEMO.NETWORK_OPS.FAULT_DATA_STAGE;
 
 # Upload SOP documents
-PUT file://data/sample_sop_documents/*.json @TDCNET_DEMO.NETWORK_OPS.SOP_DOCUMENTS_STAGE;
+PUT file://data/sample_sop_documents/*.json @TELCO_DEMO.NETWORK_OPS.SOP_DOCUMENTS_STAGE;
 ```
 
 ### 2.2 Load Data into Tables
@@ -164,8 +164,8 @@ streamlit run app.py
 2. **Go to Streamlit > + Streamlit App**
 3. **Create new app:**
    - **Name:** `TDC_Net_Manager_Dashboard`
-   - **Warehouse:** `TDCNET_DEMO_WH`
-   - **App location:** `TDCNET_DEMO.NETWORK_OPS`
+   - **Warehouse:** `SID_WH`
+   - **App location:** `TELCO_DEMO.NETWORK_OPS`
 4. **Copy contents of `streamlit_apps/manager_dashboard/app.py`**
 5. **Replace the data loading function with Snowflake connector:**
 
@@ -197,8 +197,8 @@ def load_fault_data():
 #### Field Engineer App Deployment
 1. **Create second Streamlit app:**
    - **Name:** `TDC_Net_Field_Assistant`
-   - **Warehouse:** `TDCNET_DEMO_WH`
-   - **App location:** `TDCNET_DEMO.NETWORK_OPS`
+   - **Warehouse:** `SID_WH`
+   - **App location:** `TELCO_DEMO.NETWORK_OPS`
 2. **Copy contents of `streamlit_apps/field_engineer_app/app.py`**
 3. **Update data loading functions for Snowflake:**
 

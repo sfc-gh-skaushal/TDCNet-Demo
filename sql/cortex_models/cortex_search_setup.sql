@@ -1,9 +1,9 @@
 -- TDC Net Snowflake Demo - Cortex Search Setup
 -- Implements AI-powered search and Q&A for SOP documents using Cortex Search
 
-USE DATABASE TDCNET_DEMO;
+USE DATABASE TELCO_DEMO;
 USE SCHEMA NETWORK_OPS;
-USE WAREHOUSE TDCNET_DEMO_WH;
+USE WAREHOUSE SID_WH;
 
 -- Create a search service for SOP documents
 -- Note: Cortex Search requires specific setup in Snowflake

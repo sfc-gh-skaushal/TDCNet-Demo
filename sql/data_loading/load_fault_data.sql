@@ -1,9 +1,9 @@
 -- TDC Net Snowflake Demo - Load Fault Data
 -- Loads network fault logs from CSV file into Snowflake
 
-USE DATABASE TDCNET_DEMO;
+USE DATABASE TELCO_DEMO;
 USE SCHEMA NETWORK_OPS;
-USE WAREHOUSE TDCNET_DEMO_WH;
+USE WAREHOUSE SID_WH;
 
 -- First, put the CSV file into the stage
 -- This would typically be done via SnowSQL or Snowflake web interface
@@ -58,7 +58,8 @@ SELECT
         'service_calls_generated', SERVICE_CALLS_GENERATED,
         'hour_of_day', HOUR(FAULT_TIMESTAMP),
         'day_of_week', DAYOFWEEK(FAULT_TIMESTAMP),
-        'business_hours', BUSINESS_HOURS_FAULT
+        'business_hours', (HOUR(FAULT_TIMESTAMP) BETWEEN 8 AND 17 
+                          AND DAYOFWEEK(FAULT_TIMESTAMP) BETWEEN 2 AND 6)
     ) AS FEATURES,
     FAULT_CATEGORY AS LABEL
 FROM NETWORK_FAULTS

@@ -1,9 +1,9 @@
 -- TDC Net Snowflake Demo - Fault Classification with Cortex Analyst
 -- Implements ML-based fault classification using Snowflake's Cortex AI
 
-USE DATABASE TDCNET_DEMO;
+USE DATABASE TELCO_DEMO;
 USE SCHEMA NETWORK_OPS;
-USE WAREHOUSE TDCNET_DEMO_WH;
+USE WAREHOUSE SID_WH;
 
 -- Create a view for model training features
 CREATE OR REPLACE VIEW VW_FAULT_FEATURES AS
