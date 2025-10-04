@@ -250,7 +250,6 @@ Tools Required: Signal level meter, Basic tools, Laptop"""
     ]
 
 # Load sample data from Snowflake
-@st.cache_data
 def load_fault_data():
     """Load fault data from Snowflake"""
     try:
@@ -300,14 +299,9 @@ def load_fault_data():
             (df['fault_timestamp'].dt.dayofweek < 5)
         )
         
-        # Load SOP documents metadata from Snowflake (optional)
-        try:
-            sop_docs = session.table("SOP_DOCUMENT_METADATA").to_pandas().to_dict('records')
-            if not sop_docs:  # If table exists but is empty
-                sop_docs = get_sample_sop_documents()
-        except Exception as sop_error:
-            # Use sample SOP documents when Snowflake tables aren't available
-            sop_docs = get_sample_sop_documents()
+        # Use sample SOP documents for reliable demo experience
+        # TODO: Replace with Snowflake SOP_DOCUMENT_METADATA when properly set up
+        sop_docs = get_sample_sop_documents()
         
         return df, sop_docs
     except Exception as e:
