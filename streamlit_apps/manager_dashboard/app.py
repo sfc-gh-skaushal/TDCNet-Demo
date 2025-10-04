@@ -57,9 +57,15 @@ def load_fault_data():
         df['fault_timestamp'] = pd.to_datetime(df['fault_timestamp'])
         df['resolution_timestamp'] = pd.to_datetime(df['resolution_timestamp'])
         
-        # Add calculated fields (simulating SQL functions)
+        # Add calculated fields (simulating the enhanced view)
         df['hours_since_fault'] = (datetime.now() - df['fault_timestamp']).dt.total_seconds() / 3600
         df['is_resolved'] = df['resolution_timestamp'].notna()
+        df['created_date'] = df['fault_timestamp'].dt.date
+        df['resolution_date'] = df['resolution_timestamp'].dt.date
+        df['business_hours_fault'] = (
+            (df['fault_timestamp'].dt.hour.between(8, 17)) &
+            (df['fault_timestamp'].dt.dayofweek.between(1, 5))  # Monday=0, Sunday=6
+        )
         
         # Simulate ML predictions
         df['predicted_category'] = df['fault_category']  # In real app, this would come from Cortex ML

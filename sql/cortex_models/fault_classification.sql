@@ -31,7 +31,7 @@ SELECT
         'day_of_week', DAY_OF_WEEK,
         'business_hours', BUSINESS_HOURS_FAULT
     ) AS FEATURES
-FROM NETWORK_FAULTS
+FROM VW_NETWORK_FAULTS_ENHANCED
 WHERE FAULT_CATEGORY IS NOT NULL;
 
 -- Create training and test datasets (80/20 split)
@@ -220,7 +220,7 @@ SELECT
     DATEDIFF('hour', f.FAULT_TIMESTAMP, CURRENT_TIMESTAMP()) AS HOURS_SINCE_FAULT,
     f.BUSINESS_HOURS_FAULT
     
-FROM NETWORK_FAULTS f;
+FROM VW_NETWORK_FAULTS_ENHANCED f;
 
 -- Create a real-time fault triage view for the manager dashboard
 CREATE OR REPLACE VIEW VW_FAULT_TRIAGE AS

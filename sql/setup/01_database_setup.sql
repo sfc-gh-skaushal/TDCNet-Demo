@@ -2,27 +2,18 @@
 -- This script creates the database, schema, and core objects for the demo
 
 -- Create database and schema
-CREATE DATABASE IF NOT EXISTS TDCNET_DEMO;
-USE DATABASE TDCNET_DEMO;
+USE ROLE SYSADMIN;
+CREATE DATABASE IF NOT EXISTS TELCO_DEMO;
+USE DATABASE TELCO_DEMO;
 
 CREATE SCHEMA IF NOT EXISTS NETWORK_OPS;
 USE SCHEMA NETWORK_OPS;
 
 -- Create warehouse for demo workloads
-CREATE WAREHOUSE IF NOT EXISTS TDCNET_DEMO_WH
-WITH 
-    WAREHOUSE_SIZE = 'MEDIUM'
-    AUTO_SUSPEND = 300
-    AUTO_RESUME = TRUE
-    INITIALLY_SUSPENDED = TRUE
-    COMMENT = 'Warehouse for TDC Net demo workloads';
 
-USE WAREHOUSE TDCNET_DEMO_WH;
+USE WAREHOUSE SID>_WH;
 
 -- Grant necessary privileges (adjust as needed for your environment)
-GRANT USAGE ON DATABASE TDCNET_DEMO TO ROLE SYSADMIN;
-GRANT USAGE ON SCHEMA NETWORK_OPS TO ROLE SYSADMIN;
-GRANT ALL ON WAREHOUSE TDCNET_DEMO_WH TO ROLE SYSADMIN;
 
 -- Enable Cortex AI functions (requires Enterprise edition or higher)
 -- These functions will be used in subsequent scripts
