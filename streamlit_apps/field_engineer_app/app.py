@@ -138,10 +138,14 @@ def load_fault_data():
         # Debug: Show available columns
         st.write(f"🔍 Available columns: {list(df.columns)}")
         
+        # Normalize column names to lowercase for consistent access
+        df.columns = df.columns.str.lower()
+        st.write(f"🔍 Normalized columns: {list(df.columns)}")
+        
         # Handle different possible column name variations
         timestamp_col = None
         for col in df.columns:
-            if col.lower() in ['fault_timestamp', 'timestamp', 'created_at', 'fault_time']:
+            if col in ['fault_timestamp', 'timestamp', 'created_at', 'fault_time']:
                 timestamp_col = col
                 break
         
@@ -154,7 +158,7 @@ def load_fault_data():
         # Handle resolution timestamp
         resolution_col = None
         for col in df.columns:
-            if col.lower() in ['resolution_timestamp', 'resolved_at', 'resolution_time']:
+            if col in ['resolution_timestamp', 'resolved_at', 'resolution_time']:
                 resolution_col = col
                 break
         
