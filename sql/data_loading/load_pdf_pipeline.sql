@@ -41,37 +41,49 @@ WHEN NOT MATCHED THEN
 -- Step 4: Insert document metadata using MERGE to handle conflicts
 MERGE INTO SOP_DOCUMENT_METADATA AS target
 USING (
-    SELECT * FROM VALUES
-    ('SOP-001', 'SOP-001_Cable_Fault_Resolution_Procedures.pdf',
-     'Cable Fault Resolution Procedures', 'Cable Fault',
-     ARRAY_CONSTRUCT('Cisco cBR-8', 'Arris E6000', 'Casa C100G'),
-     ARRAY_CONSTRUCT('812.3', '813.1', '814.2', '815.5', '816.1'),
-     8, 1200),
-
-    ('SOP-002', 'SOP-002_Service_Degradation_Troubleshooting.pdf',
-     'Service Degradation Troubleshooting', 'Major',
-     ARRAY_CONSTRUCT('Nokia 7750', 'Juniper MX960', 'Cisco ASR9000'),
-     ARRAY_CONSTRUCT('600.1', '700.2', '800.3', '900.1'),
-     6, 950),
-
-    ('SOP-003', 'SOP-003_Signal_Level_Adjustment_Procedures.pdf',
-     'Signal Level Adjustment Procedures', 'Minor',
-     ARRAY_CONSTRUCT('Casa C100G', 'Harmonic CableOS', 'Cisco cBR-8'),
-     ARRAY_CONSTRUCT('100.1', '200.2', '300.5', '400.1', '500.3'),
-     4, 650),
-
-    ('SOP-004', 'SOP-004_Emergency_Network_Response_Procedures.pdf',
-     'Emergency Network Response Procedures', 'Emergency',
-     ARRAY_CONSTRUCT('All Network Equipment'),
-     ARRAY_CONSTRUCT('EMERGENCY', 'CRITICAL', 'OUTAGE'),
-     12, 1800),
-
-    ('SOP-005', 'SOP-005_Network_Security_Incident_Response.pdf',
-     'Network Security Incident Response', 'Security',
-     ARRAY_CONSTRUCT('Firewalls', 'Routers', 'Switches', 'Monitoring Systems'),
-     ARRAY_CONSTRUCT('SEC-001', 'SEC-002', 'SEC-003'),
-     10, 1400)
-) AS source (DOCUMENT_ID, FILE_PATH, TITLE, CATEGORY, EQUIPMENT_TYPES, FAULT_CODES, PAGE_COUNT, WORD_COUNT)
+    WITH source_data AS (
+        SELECT 'SOP-001' AS DOCUMENT_ID, 
+               'SOP-001_Cable_Fault_Resolution_Procedures.pdf' AS FILE_PATH,
+               'Cable Fault Resolution Procedures' AS TITLE, 
+               'Cable Fault' AS CATEGORY,
+               ARRAY_CONSTRUCT('Cisco cBR-8', 'Arris E6000', 'Casa C100G') AS EQUIPMENT_TYPES,
+               ARRAY_CONSTRUCT('812.3', '813.1', '814.2', '815.5', '816.1') AS FAULT_CODES,
+               8 AS PAGE_COUNT, 1200 AS WORD_COUNT
+        UNION ALL
+        SELECT 'SOP-002', 
+               'SOP-002_Service_Degradation_Troubleshooting.pdf',
+               'Service Degradation Troubleshooting', 
+               'Major',
+               ARRAY_CONSTRUCT('Nokia 7750', 'Juniper MX960', 'Cisco ASR9000'),
+               ARRAY_CONSTRUCT('600.1', '700.2', '800.3', '900.1'),
+               6, 950
+        UNION ALL
+        SELECT 'SOP-003', 
+               'SOP-003_Signal_Level_Adjustment_Procedures.pdf',
+               'Signal Level Adjustment Procedures', 
+               'Minor',
+               ARRAY_CONSTRUCT('Casa C100G', 'Harmonic CableOS', 'Cisco cBR-8'),
+               ARRAY_CONSTRUCT('100.1', '200.2', '300.5', '400.1', '500.3'),
+               4, 650
+        UNION ALL
+        SELECT 'SOP-004', 
+               'SOP-004_Emergency_Network_Response_Procedures.pdf',
+               'Emergency Network Response Procedures', 
+               'Emergency',
+               ARRAY_CONSTRUCT('All Network Equipment'),
+               ARRAY_CONSTRUCT('EMERGENCY', 'CRITICAL', 'OUTAGE'),
+               12, 1800
+        UNION ALL
+        SELECT 'SOP-005', 
+               'SOP-005_Network_Security_Incident_Response.pdf',
+               'Network Security Incident Response', 
+               'Security',
+               ARRAY_CONSTRUCT('Firewalls', 'Routers', 'Switches', 'Monitoring Systems'),
+               ARRAY_CONSTRUCT('SEC-001', 'SEC-002', 'SEC-003'),
+               10, 1400
+    )
+    SELECT * FROM source_data
+) AS source
 ON target.DOCUMENT_ID = source.DOCUMENT_ID
 WHEN NOT MATCHED THEN
     INSERT (DOCUMENT_ID, FILE_PATH, TITLE, CATEGORY, EQUIPMENT_TYPES, FAULT_CODES, PAGE_COUNT, WORD_COUNT)
