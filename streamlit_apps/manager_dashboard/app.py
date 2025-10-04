@@ -5,11 +5,39 @@ Streamlit application for network operations managers to identify and prioritize
 
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import numpy as np
 import snowflake.snowpark.context
+
+# Conditional import for Plotly with fallback
+try:
+    import plotly.express as px
+    import plotly.graph_objects as go
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
+    # Create dummy objects to prevent errors
+    class DummyPlotly:
+        def bar(self, *args, **kwargs):
+            return None
+        def line(self, *args, **kwargs):
+            return None
+        def pie(self, *args, **kwargs):
+            return None
+        def scatter(self, *args, **kwargs):
+            return None
+        def histogram(self, *args, **kwargs):
+            return None
+    px = DummyPlotly()
+    
+    class DummyGO:
+        def Figure(self, *args, **kwargs):
+            return None
+        def Bar(self, *args, **kwargs):
+            return None
+        def Scatter(self, *args, **kwargs):
+            return None
+    go = DummyGO()
 
 # Configure page
 st.set_page_config(
@@ -163,60 +191,68 @@ def create_fault_distribution_chart(df):
     """Create fault category distribution chart"""
     active_faults = df[~df['is_resolved']]
     
-    fig = px.pie(
-        active_faults,
-        names='fault_category',
-        values='customers_affected',
-        title="Active Faults by Category (Customer Impact)",
-        color_discrete_map={
-            'Cable Fault': '#f44336',
-            'Major': '#ff9800', 
-            'Minor': '#4caf50'
-        }
-    )
-    fig.update_traces(textposition='inside', textinfo='percent+label')
-    return fig
+    if PLOTLY_AVAILABLE:
+        fig = px.pie(
+            active_faults,
+            names='fault_category',
+            values='customers_affected',
+            title="Active Faults by Category (Customer Impact)",
+            color_discrete_map={
+                'Cable Fault': '#f44336',
+                'Major': '#ff9800', 
+                'Minor': '#4caf50'
+            }
+        )
+        fig.update_traces(textposition='inside', textinfo='percent+label')
+        return fig
+    else:
+        # Fallback: Return data for Streamlit native chart
+        return active_faults.groupby('fault_category')['customers_affected'].sum()
 
 def create_priority_timeline(df):
     """Create priority timeline chart"""
     active_faults = df[~df['is_resolved']].copy()
     active_faults = active_faults.sort_values('calculated_priority_score', ascending=False).head(20)
     
-    fig = go.Figure()
-    
-    colors = {
-        'CRITICAL': '#f44336',
-        'HIGH': '#ff9800',
-        'MEDIUM': '#2196f3',
-        'LOW': '#4caf50'
-    }
-    
-    for risk_level in ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']:
-        data = active_faults[active_faults['risk_level'] == risk_level]
-        if not data.empty:
-            fig.add_trace(go.Scatter(
-                x=data['hours_since_fault'],
-                y=data['calculated_priority_score'],
-                mode='markers',
-                marker=dict(
-                    size=data['customers_affected'] / 50,
-                    color=colors[risk_level],
-                    opacity=0.7,
-                    line=dict(width=2, color='white')
-                ),
-                text=data['fault_id'] + '<br>' + data['fault_description'],
-                name=risk_level,
-                hovertemplate='<b>%{text}</b><br>Priority: %{y:.2f}<br>Hours: %{x:.1f}<extra></extra>'
-            ))
-    
-    fig.update_layout(
-        title="Fault Priority vs Time Since Occurrence",
-        xaxis_title="Hours Since Fault",
-        yaxis_title="Priority Score",
-        height=400
-    )
-    
-    return fig
+    if PLOTLY_AVAILABLE:
+        fig = go.Figure()
+        
+        colors = {
+            'CRITICAL': '#f44336',
+            'HIGH': '#ff9800',
+            'MEDIUM': '#2196f3',
+            'LOW': '#4caf50'
+        }
+        
+        for risk_level in ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']:
+            data = active_faults[active_faults['risk_level'] == risk_level]
+            if not data.empty:
+                fig.add_trace(go.Scatter(
+                    x=data['hours_since_fault'],
+                    y=data['calculated_priority_score'],
+                    mode='markers',
+                    marker=dict(
+                        size=data['customers_affected'] / 50,
+                        color=colors[risk_level],
+                        opacity=0.7,
+                        line=dict(width=2, color='white')
+                    ),
+                    text=data['fault_id'] + '<br>' + data['fault_description'],
+                    name=risk_level,
+                    hovertemplate='<b>%{text}</b><br>Priority: %{y:.2f}<br>Hours: %{x:.1f}<extra></extra>'
+                ))
+        
+        fig.update_layout(
+            title="Fault Priority vs Time Since Occurrence",
+            xaxis_title="Hours Since Fault",
+            yaxis_title="Priority Score",
+            height=400
+        )
+        
+        return fig
+    else:
+        # Fallback: Return data for Streamlit native scatter chart
+        return active_faults[['hours_since_fault', 'calculated_priority_score', 'risk_level', 'fault_id']]
 
 def create_location_heatmap(df):
     """Create location-based fault heatmap"""
@@ -226,16 +262,19 @@ def create_location_heatmap(df):
         'calculated_priority_score': 'mean'
     }).reset_index()
     
-    fig = px.treemap(
-        location_stats,
-        path=['location', 'fault_category'],
-        values='customers_affected',
-        color='calculated_priority_score',
-        color_continuous_scale='RdYlBu_r',
-        title="Fault Impact by Location and Category"
-    )
-    
-    return fig
+    if PLOTLY_AVAILABLE:
+        fig = px.treemap(
+            location_stats,
+            path=['location', 'fault_category'],
+            values='customers_affected',
+            color='calculated_priority_score',
+            color_continuous_scale='RdYlBu_r',
+            title="Fault Impact by Location and Category"
+        )
+        return fig
+    else:
+        # Fallback: Return data for Streamlit native chart
+        return location_stats
 
 def display_critical_alerts(df):
     """Display critical fault alerts"""
@@ -319,6 +358,12 @@ def main():
     st.title("🔧 TDC Net Network Operations Dashboard")
     st.markdown("**Proactive Fault Triage & Technician Dispatch Optimization**")
     
+    # Display chart availability status
+    if PLOTLY_AVAILABLE:
+        st.success("📊 Advanced interactive charts enabled")
+    else:
+        st.info("📊 Using Streamlit native charts (Plotly not available in this environment)")
+    
     # Load data
     df = load_fault_data()
     
@@ -381,12 +426,27 @@ def main():
     col1, col2 = st.columns(2)
     
     with col1:
-        st.plotly_chart(create_fault_distribution_chart(filtered_df), use_container_width=True)
+        if PLOTLY_AVAILABLE:
+            st.plotly_chart(create_fault_distribution_chart(filtered_df), use_container_width=True)
+        else:
+            st.subheader("Active Faults by Category (Customer Impact)")
+            chart_data = create_fault_distribution_chart(filtered_df)
+            st.bar_chart(chart_data)
     
     with col2:
-        st.plotly_chart(create_priority_timeline(filtered_df), use_container_width=True)
+        if PLOTLY_AVAILABLE:
+            st.plotly_chart(create_priority_timeline(filtered_df), use_container_width=True)
+        else:
+            st.subheader("Fault Priority vs Time Since Occurrence")
+            chart_data = create_priority_timeline(filtered_df)
+            st.scatter_chart(chart_data, x='hours_since_fault', y='calculated_priority_score', color='risk_level')
     
-    st.plotly_chart(create_location_heatmap(filtered_df), use_container_width=True)
+    if PLOTLY_AVAILABLE:
+        st.plotly_chart(create_location_heatmap(filtered_df), use_container_width=True)
+    else:
+        st.subheader("Fault Impact by Location and Category")
+        chart_data = create_location_heatmap(filtered_df)
+        st.bar_chart(chart_data.set_index('location')['customers_affected'])
     
     st.markdown("---")
     
