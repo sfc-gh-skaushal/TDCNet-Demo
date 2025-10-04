@@ -302,6 +302,7 @@ def load_fault_data():
         # Use sample SOP documents for reliable demo experience
         # TODO: Replace with Snowflake SOP_DOCUMENT_METADATA when properly set up
         sop_docs = get_sample_sop_documents()
+        st.write(f"🔍 Debug: Loaded {len(sop_docs)} sample SOP documents")
         
         return df, sop_docs
     except Exception as e:
@@ -756,6 +757,11 @@ def main():
     
     with tab3:
         st.markdown("### 📚 Available Procedures")
+        
+        # Debug: Show what SOP documents we have
+        st.write(f"🔍 Debug: Found {len(sop_docs)} SOP documents")
+        if sop_docs:
+            st.write(f"🔍 First SOP: {sop_docs[0].get('document_id', 'NO_ID')} - {sop_docs[0].get('title', 'NO_TITLE')}")
         
         if sop_docs:
             for idx, doc in enumerate(sop_docs):
