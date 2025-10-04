@@ -82,20 +82,28 @@ $$
         END AS EQUIPMENT_MATCH
     FROM TABLE(SNOWFLAKE.CORTEX.SEARCH(
         'SOP_CHUNKS_SEARCH_SERVICE',
-        OBJECT_CONSTRUCT(
-            'query', QUERY_TEXT,
-            'filter', OBJECT_CONSTRUCT_KEEP_NULL_VALUES(
-                'and', ARRAY_COMPACT(ARRAY_CONSTRUCT(
-                    CASE WHEN CHUNK_TYPE IS NOT NULL THEN 
-                        OBJECT_CONSTRUCT('@eq', OBJECT_CONSTRUCT('CHUNK_TYPE', CHUNK_TYPE))
-                    END,
-                    CASE WHEN DOCUMENT_CATEGORY IS NOT NULL THEN 
-                        OBJECT_CONSTRUCT('@eq', OBJECT_CONSTRUCT('CATEGORY', DOCUMENT_CATEGORY))
-                    END
-                ))
-            ),
-            'limit', RESULT_LIMIT
-        )
+        CASE 
+            WHEN CHUNK_TYPE IS NOT NULL OR DOCUMENT_CATEGORY IS NOT NULL THEN
+                OBJECT_CONSTRUCT(
+                    'query', QUERY_TEXT,
+                    'filter', OBJECT_CONSTRUCT(
+                        'and', ARRAY_COMPACT(ARRAY_CONSTRUCT(
+                            CASE WHEN CHUNK_TYPE IS NOT NULL THEN 
+                                OBJECT_CONSTRUCT('@eq', OBJECT_CONSTRUCT('CHUNK_TYPE', CHUNK_TYPE))
+                            END,
+                            CASE WHEN DOCUMENT_CATEGORY IS NOT NULL THEN 
+                                OBJECT_CONSTRUCT('@eq', OBJECT_CONSTRUCT('CATEGORY', DOCUMENT_CATEGORY))
+                            END
+                        ))
+                    ),
+                    'limit', RESULT_LIMIT
+                )
+            ELSE
+                OBJECT_CONSTRUCT(
+                    'query', QUERY_TEXT,
+                    'limit', RESULT_LIMIT
+                )
+        END
     ))
     WHERE CASE 
         WHEN EQUIPMENT_TYPE IS NOT NULL THEN 
