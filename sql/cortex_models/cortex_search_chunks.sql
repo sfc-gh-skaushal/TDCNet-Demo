@@ -70,62 +70,54 @@ RETURNS TABLE (
 LANGUAGE SQL
 AS
 $$
-    WITH search_results AS (
-        SELECT
-            c.CHUNK_ID,
-            c.DOCUMENT_ID,
-            m.TITLE AS DOCUMENT_TITLE,
-            m.CATEGORY,
-            c.CHUNK_TEXT,
-            c.CHUNK_TYPE,
-            c.SECTION_NAME,
-            c.PAGE_NUMBER,
-            c.CHUNK_SEQUENCE,
-            m.EQUIPMENT_TYPES,
-            -- Simulate relevance scoring based on text matching
-            CASE 
-                WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.9
-                WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(QUERY_TEXT, ' ', 1)) || '%' THEN 0.7
-                WHEN UPPER(c.SECTION_NAME) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.6
-                WHEN UPPER(m.TITLE) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.5
-                ELSE 0.3
-            END AS RELEVANCE_SCORE,
-            CASE 
-                WHEN EQUIPMENT_TYPE IS NOT NULL THEN 
-                    ARRAYS_OVERLAP(m.EQUIPMENT_TYPES, ARRAY_CONSTRUCT(EQUIPMENT_TYPE))
-                ELSE TRUE
-            END AS EQUIPMENT_MATCH
-        FROM SOP_DOCUMENT_CHUNKS c
-        JOIN SOP_DOCUMENT_METADATA m ON c.DOCUMENT_ID = m.DOCUMENT_ID
-        WHERE m.IS_ACTIVE = TRUE 
-          AND c.IS_MEANINGFUL = TRUE
-          AND LENGTH(TRIM(c.CHUNK_TEXT)) > 20
-          -- Apply filters
-          AND (CHUNK_TYPE IS NULL OR c.CHUNK_TYPE = CHUNK_TYPE)
-          AND (DOCUMENT_CATEGORY IS NULL OR m.CATEGORY = DOCUMENT_CATEGORY)
-          -- Text search simulation
-          AND (
-              UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(QUERY_TEXT) || '%'
-              OR UPPER(c.SECTION_NAME) LIKE '%' || UPPER(QUERY_TEXT) || '%'
-              OR UPPER(m.TITLE) LIKE '%' || UPPER(QUERY_TEXT) || '%'
-              OR UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(QUERY_TEXT, ' ', 1)) || '%'
-          )
-    )
     SELECT
-        CHUNK_ID,
-        DOCUMENT_ID,
-        DOCUMENT_TITLE,
-        CATEGORY,
-        CHUNK_TEXT,
-        CHUNK_TYPE,
-        SECTION_NAME,
-        PAGE_NUMBER,
-        CHUNK_SEQUENCE,
-        RELEVANCE_SCORE,
-        EQUIPMENT_MATCH
-    FROM search_results
-    WHERE EQUIPMENT_MATCH = TRUE
-    ORDER BY RELEVANCE_SCORE DESC
+        c.CHUNK_ID,
+        c.DOCUMENT_ID,
+        m.TITLE AS DOCUMENT_TITLE,
+        m.CATEGORY,
+        c.CHUNK_TEXT,
+        c.CHUNK_TYPE,
+        c.SECTION_NAME,
+        c.PAGE_NUMBER,
+        c.CHUNK_SEQUENCE,
+        -- Simulate relevance scoring based on text matching
+        CASE 
+            WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.9
+            WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(QUERY_TEXT, ' ', 1)) || '%' THEN 0.7
+            WHEN UPPER(c.SECTION_NAME) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.6
+            WHEN UPPER(m.TITLE) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.5
+            ELSE 0.3
+        END AS RELEVANCE_SCORE,
+        CASE 
+            WHEN EQUIPMENT_TYPE IS NOT NULL THEN 
+                ARRAYS_OVERLAP(m.EQUIPMENT_TYPES, ARRAY_CONSTRUCT(EQUIPMENT_TYPE))
+            ELSE TRUE
+        END AS EQUIPMENT_MATCH
+    FROM SOP_DOCUMENT_CHUNKS c
+    JOIN SOP_DOCUMENT_METADATA m ON c.DOCUMENT_ID = m.DOCUMENT_ID
+    WHERE m.IS_ACTIVE = TRUE 
+      AND c.IS_MEANINGFUL = TRUE
+      AND LENGTH(TRIM(c.CHUNK_TEXT)) > 20
+      -- Apply filters
+      AND (CHUNK_TYPE IS NULL OR c.CHUNK_TYPE = CHUNK_TYPE)
+      AND (DOCUMENT_CATEGORY IS NULL OR m.CATEGORY = DOCUMENT_CATEGORY)
+      -- Equipment filter
+      AND (EQUIPMENT_TYPE IS NULL OR ARRAYS_OVERLAP(m.EQUIPMENT_TYPES, ARRAY_CONSTRUCT(EQUIPMENT_TYPE)))
+      -- Text search simulation
+      AND (
+          UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(QUERY_TEXT) || '%'
+          OR UPPER(c.SECTION_NAME) LIKE '%' || UPPER(QUERY_TEXT) || '%'
+          OR UPPER(m.TITLE) LIKE '%' || UPPER(QUERY_TEXT) || '%'
+          OR UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(QUERY_TEXT, ' ', 1)) || '%'
+      )
+    ORDER BY 
+        CASE 
+            WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.9
+            WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(QUERY_TEXT, ' ', 1)) || '%' THEN 0.7
+            WHEN UPPER(c.SECTION_NAME) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.6
+            WHEN UPPER(m.TITLE) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.5
+            ELSE 0.3
+        END DESC
     LIMIT RESULT_LIMIT
 $$;
 
