@@ -300,8 +300,9 @@ def generate_repair_procedure(fault_code, equipment_type, fault_description, sop
                 score += 0.6
                 break
         
-        # Check content relevance
-        if fault_code in doc['content']:
+        # Check content relevance (handle missing content field)
+        content_text = doc.get('content', '') or doc.get('title', '') or doc.get('description', '')
+        if fault_code in content_text:
             score += 0.4
         
         if score > best_score:
@@ -309,10 +310,41 @@ def generate_repair_procedure(fault_code, equipment_type, fault_description, sop
             best_match = doc
     
     if not best_match:
-        return None
+        # Return a generic procedure if no SOP match found
+        return {
+            'document_id': 'GENERIC',
+            'title': 'Generic Repair Procedure',
+            'safety_steps': [
+                'Ensure proper PPE (hard hat, safety vest, gloves)',
+                'Check for electrical hazards before starting work',
+                'Establish safety perimeter around work area',
+                'Verify equipment is properly grounded'
+            ],
+            'diagnostic_steps': [
+                'Review fault description and error codes',
+                'Check system alarms and status indicators',
+                'Perform initial visual inspection',
+                'Test signal levels and connectivity'
+            ],
+            'repair_steps': [
+                'Follow manufacturer guidelines for the equipment',
+                'Replace or repair faulty components as needed',
+                'Ensure all connections are secure',
+                'Update system configuration if required'
+            ],
+            'verification_steps': [
+                'Test system functionality after repair',
+                'Verify signal levels are within specifications',
+                'Check for any remaining alarms or errors',
+                'Document repair actions and test results'
+            ],
+            'estimated_time': '2-4 hours',
+            'tools_required': ['Standard toolkit', 'Multimeter', 'Signal analyzer'],
+            'full_content': f'Generic repair procedure for {fault_description}'
+        }
     
     # Extract procedure steps from content
-    content = best_match['content']
+    content = best_match.get('content', best_match.get('title', 'No content available'))
     
     # Parse different sections
     safety_steps = []
@@ -617,7 +649,8 @@ def main():
                 st.markdown(f"**Fault Codes:** {', '.join(doc['fault_codes'])}")
                 
                 if st.button(f"View Procedure", key=f"view_{doc['document_id']}"):
-                    st.text(doc['content'])
+                    content = doc.get('content', 'Content not available for this document')
+                    st.text(content)
     
     # Demo information
     with st.expander("ℹ️ Demo Information"):
