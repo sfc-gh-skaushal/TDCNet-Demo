@@ -5,12 +5,30 @@ Mobile-first Streamlit application for field engineers to get instant repair gui
 
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 import json
 from datetime import datetime
 import time
 import snowflake.snowpark.context
+
+# Conditional import for Plotly with fallback
+try:
+    import plotly.express as px
+    import plotly.graph_objects as go
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
+    # Create dummy objects to prevent errors
+    class DummyPlotly:
+        def bar(self, *args, **kwargs):
+            return None
+        def line(self, *args, **kwargs):
+            return None
+        def pie(self, *args, **kwargs):
+            return None
+        def scatter(self, *args, **kwargs):
+            return None
+    px = DummyPlotly()
+    go = DummyPlotly()
 
 # Configure page for mobile-first design
 st.set_page_config(
@@ -508,6 +526,12 @@ def main():
         <p>AI-Powered Repair Guidance at Your Fingertips</p>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Display chart availability status
+    if PLOTLY_AVAILABLE:
+        st.success("📊 Advanced interactive charts enabled")
+    else:
+        st.info("📊 Using Streamlit native charts (Plotly not available in this environment)")
     
     # Load data
     df, sop_docs = load_fault_data()

@@ -94,7 +94,32 @@ If dependencies are not automatically installed, you may need to contact your Sn
 1. **Check requirements.txt**: Ensure `plotly>=5.0.0` is listed
 2. **Verify app deployment**: Make sure requirements.txt was uploaded with the app
 3. **Contact admin**: Snowflake admin may need to install packages manually
-4. **Alternative approach**: Use Streamlit's built-in charting instead of Plotly
+4. **Use fallback approach**: The field engineer app now includes conditional imports that gracefully handle missing Plotly
+
+**Fallback Implementation:**
+```python
+# Conditional import for Plotly with fallback
+try:
+    import plotly.express as px
+    import plotly.graph_objects as go
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
+    # Create dummy objects to prevent errors
+    class DummyPlotly:
+        def bar(self, *args, **kwargs):
+            return None
+        def line(self, *args, **kwargs):
+            return None
+        def pie(self, *args, **kwargs):
+            return None
+        def scatter(self, *args, **kwargs):
+            return None
+    px = DummyPlotly()
+    go = DummyPlotly()
+```
+
+This approach allows the app to run even when Plotly is not available, using Streamlit's native charting capabilities instead.
 
 #### Issue: `No module named 'snowflake.snowpark.context'`
 **Solutions:**
