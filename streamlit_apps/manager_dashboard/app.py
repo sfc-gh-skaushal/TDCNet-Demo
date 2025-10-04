@@ -102,15 +102,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Load data from Snowflake using native Snowpark session
-@st.cache_data
+@st.cache_data(ttl=60)  # Cache for 60 seconds only
 def load_fault_data():
     """Load fault data from Snowflake"""
     try:
         # Get Snowflake session
+        st.write("🔍 Getting Snowflake session...")
         session = snowflake.snowpark.context.get_active_session()
         
         # Load fault data from Snowflake enhanced view
+        st.write("🔍 Loading data from VW_NETWORK_FAULTS_ENHANCED...")
         df = session.table("VW_NETWORK_FAULTS_ENHANCED").to_pandas()
+        st.write(f"🔍 Data loaded successfully. Shape: {df.shape}")
         
         # Debug: Show available columns
         st.write(f"🔍 Available columns: {list(df.columns)}")
@@ -420,6 +423,11 @@ def main():
         st.success("📊 Advanced interactive charts enabled (Plotly loaded successfully)")
     else:
         st.warning("📊 Using Streamlit native charts - Plotly not available in this environment")
+    
+    # Add cache clear button for debugging
+    if st.button("🔄 Clear Cache & Reload Data"):
+        st.cache_data.clear()
+        st.rerun()
     
     # Load data
     df = load_fault_data()
