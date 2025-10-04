@@ -36,7 +36,13 @@ USE ROLE SYSADMIN;
 -- Copy and paste contents from: sql/setup/02_pdf_tables.sql
 ```
 
-### 1.3 Verify Cortex AI Functions
+### 1.3 Create Network Faults Tables
+```sql
+-- Execute network faults table creation script
+-- Copy and paste contents from: sql/setup/03_network_faults_tables.sql
+```
+
+### 1.4 Verify Cortex AI Functions
 ```sql
 -- Check available Cortex functions
 SHOW FUNCTIONS LIKE 'SNOWFLAKE.ML%';

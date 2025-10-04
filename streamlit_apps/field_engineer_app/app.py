@@ -134,21 +134,53 @@ def load_fault_data():
         
         # Load fault data from Snowflake
         df = session.table("VW_NETWORK_FAULTS_ENHANCED").to_pandas()
-        df['fault_timestamp'] = pd.to_datetime(df['fault_timestamp'])
-        df['is_resolved'] = df['resolution_timestamp'].notna()
+        
+        # Debug: Show available columns
+        st.write(f"🔍 Available columns: {list(df.columns)}")
+        
+        # Handle different possible column name variations
+        timestamp_col = None
+        for col in df.columns:
+            if col.lower() in ['fault_timestamp', 'timestamp', 'created_at', 'fault_time']:
+                timestamp_col = col
+                break
+        
+        if timestamp_col:
+            df['fault_timestamp'] = pd.to_datetime(df[timestamp_col])
+        else:
+            st.error(f"No timestamp column found. Available columns: {list(df.columns)}")
+            return pd.DataFrame(), []
+        
+        # Handle resolution timestamp
+        resolution_col = None
+        for col in df.columns:
+            if col.lower() in ['resolution_timestamp', 'resolved_at', 'resolution_time']:
+                resolution_col = col
+                break
+        
+        if resolution_col:
+            df['resolution_timestamp'] = pd.to_datetime(df[resolution_col])
+            df['is_resolved'] = df['resolution_timestamp'].notna()
+        else:
+            df['resolution_timestamp'] = None
+            df['is_resolved'] = False
         
         # Add calculated fields for local processing
         df['hours_since_fault'] = (pd.Timestamp.now() - df['fault_timestamp']).dt.total_seconds() / 3600
         df['created_date'] = df['fault_timestamp'].dt.date
-        df['resolution_date'] = df['resolution_timestamp'].dt.date
+        df['resolution_date'] = df['resolution_timestamp'].dt.date if resolution_col else None
         df['business_hours_fault'] = (
             (df['fault_timestamp'].dt.hour >= 8) & 
             (df['fault_timestamp'].dt.hour <= 17) & 
             (df['fault_timestamp'].dt.dayofweek < 5)
         )
         
-        # Load SOP documents metadata from Snowflake
-        sop_docs = session.table("SOP_DOCUMENT_METADATA").to_pandas().to_dict('records')
+        # Load SOP documents metadata from Snowflake (optional)
+        try:
+            sop_docs = session.table("SOP_DOCUMENT_METADATA").to_pandas().to_dict('records')
+        except Exception as sop_error:
+            st.warning(f"SOP documents not available: {sop_error}")
+            sop_docs = []
         
         return df, sop_docs
     except Exception as e:

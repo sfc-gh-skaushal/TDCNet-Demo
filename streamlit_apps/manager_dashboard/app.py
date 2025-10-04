@@ -111,12 +111,38 @@ def load_fault_data():
         
         # Load fault data from Snowflake enhanced view
         df = session.table("VW_NETWORK_FAULTS_ENHANCED").to_pandas()
-        df['fault_timestamp'] = pd.to_datetime(df['fault_timestamp'])
-        df['resolution_timestamp'] = pd.to_datetime(df['resolution_timestamp'])
+        
+        # Debug: Show available columns
+        st.write(f"🔍 Available columns: {list(df.columns)}")
+        
+        # Handle different possible column name variations
+        timestamp_col = None
+        for col in df.columns:
+            if col.lower() in ['fault_timestamp', 'timestamp', 'created_at', 'fault_time']:
+                timestamp_col = col
+                break
+        
+        if timestamp_col:
+            df['fault_timestamp'] = pd.to_datetime(df[timestamp_col])
+        else:
+            st.error(f"No timestamp column found. Available columns: {list(df.columns)}")
+            return pd.DataFrame()
+        
+        # Handle resolution timestamp
+        resolution_col = None
+        for col in df.columns:
+            if col.lower() in ['resolution_timestamp', 'resolved_at', 'resolution_time']:
+                resolution_col = col
+                break
+        
+        if resolution_col:
+            df['resolution_timestamp'] = pd.to_datetime(df[resolution_col])
+        else:
+            df['resolution_timestamp'] = None
         
         # Add calculated fields for local processing
         df['hours_since_fault'] = (pd.Timestamp.now() - df['fault_timestamp']).dt.total_seconds() / 3600
-        df['is_resolved'] = df['resolution_timestamp'].notna()
+        df['is_resolved'] = df['resolution_timestamp'].notna() if resolution_col else False
         df['created_date'] = df['fault_timestamp'].dt.date
         df['resolution_date'] = df['resolution_timestamp'].dt.date
         df['business_hours_fault'] = (
