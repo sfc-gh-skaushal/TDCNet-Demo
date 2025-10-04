@@ -124,6 +124,131 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+def get_sample_sop_documents():
+    """Return sample SOP documents for demo purposes"""
+    return [
+        {
+            'document_id': 'SOP-001',
+            'title': 'Cable Fault Resolution Procedures',
+            'category': 'Cable Fault',
+            'equipment_types': ['Cisco cBR-8', 'Arris E6000', 'Casa C100G'],
+            'fault_codes': ['812.3', '813.1', '814.2'],
+            'content': """CABLE FAULT RESOLUTION PROCEDURE
+
+SAFETY REQUIREMENTS:
+- Ensure proper PPE (hard hat, safety vest, gloves)
+- Check for electrical hazards before starting work
+- Establish safety perimeter around work area
+- Verify equipment is properly grounded
+
+DIAGNOSTIC STEPS:
+1. Review fault description and error codes
+2. Check system alarms and status indicators
+3. Use TDR (Time Domain Reflectometer) to locate fault
+4. Perform visual inspection of cable path
+5. Test signal levels at multiple points
+
+REPAIR PROCEDURES:
+1. Isolate affected cable segment
+2. Excavate carefully around fault location
+3. Cut out damaged cable section
+4. Install new cable segment with proper splicing
+5. Test continuity and signal integrity
+6. Restore service and verify customer connectivity
+
+VERIFICATION:
+- Test all affected services
+- Verify signal levels within specifications
+- Update network documentation
+- Complete work order with detailed notes
+
+Estimated Time: 4-8 hours
+Tools Required: TDR, Excavation tools, Splice kit, Signal meter"""
+        },
+        {
+            'document_id': 'SOP-002',
+            'title': 'Service Degradation Troubleshooting',
+            'category': 'Major',
+            'equipment_types': ['Nokia 7750', 'Juniper MX', 'Cisco ASR'],
+            'fault_codes': ['815.5', '816.1', '817.2'],
+            'content': """SERVICE DEGRADATION TROUBLESHOOTING
+
+SAFETY REQUIREMENTS:
+- Follow standard electrical safety procedures
+- Wear appropriate PPE
+- Ensure backup power systems are operational
+
+INITIAL ASSESSMENT:
+1. Check system alarms and error logs
+2. Review traffic patterns and utilization
+3. Identify affected services and customers
+4. Determine scope of degradation
+
+DIAGNOSTIC PROCEDURES:
+1. Test signal levels at distribution points
+2. Check for equipment overheating
+3. Verify power supply stability
+4. Analyze traffic patterns for congestion
+5. Test backup systems and redundancy
+
+RESOLUTION STEPS:
+1. Implement traffic load balancing if applicable
+2. Replace faulty line cards or modules
+3. Upgrade capacity if congestion-related
+4. Restart affected services in controlled manner
+5. Monitor system performance during recovery
+
+VERIFICATION:
+- Confirm all services restored to normal levels
+- Verify customer connectivity and speeds
+- Update capacity planning documentation
+- Schedule follow-up monitoring
+
+Estimated Time: 2-4 hours
+Tools Required: Optical power meter, Laptop, Console cables"""
+        },
+        {
+            'document_id': 'SOP-003',
+            'title': 'Minor Network Issues Quick Fix',
+            'category': 'Minor',
+            'equipment_types': ['General Equipment', 'Customer Premises'],
+            'fault_codes': ['818.1', '819.2', '820.3'],
+            'content': """MINOR NETWORK ISSUES QUICK FIX
+
+SAFETY REQUIREMENTS:
+- Basic PPE (safety glasses, gloves)
+- Follow customer premises safety protocols
+
+COMMON MINOR ISSUES:
+1. Customer equipment configuration errors
+2. Cable connection problems
+3. Signal level adjustments
+4. Software configuration updates
+
+QUICK DIAGNOSTIC:
+1. Check physical connections
+2. Verify customer equipment status
+3. Test signal levels at customer premises
+4. Review recent configuration changes
+
+RESOLUTION PROCEDURES:
+1. Reconnect loose cables
+2. Reset customer equipment if needed
+3. Adjust signal levels within specifications
+4. Update configuration settings
+5. Provide customer education if applicable
+
+VERIFICATION:
+- Test customer services end-to-end
+- Verify all indicators show normal status
+- Confirm customer satisfaction
+- Document resolution for future reference
+
+Estimated Time: 30 minutes - 1 hour
+Tools Required: Signal level meter, Basic tools, Laptop"""
+        }
+    ]
+
 # Load sample data from Snowflake
 @st.cache_data
 def load_fault_data():
@@ -178,9 +303,11 @@ def load_fault_data():
         # Load SOP documents metadata from Snowflake (optional)
         try:
             sop_docs = session.table("SOP_DOCUMENT_METADATA").to_pandas().to_dict('records')
+            if not sop_docs:  # If table exists but is empty
+                sop_docs = get_sample_sop_documents()
         except Exception as sop_error:
-            st.warning(f"SOP documents not available: {sop_error}")
-            sop_docs = []
+            # Use sample SOP documents when Snowflake tables aren't available
+            sop_docs = get_sample_sop_documents()
         
         return df, sop_docs
     except Exception as e:
@@ -192,7 +319,7 @@ def load_fault_data():
             'technician_type_required', 'resolution_timestamp', 'is_resolved',
             'hours_since_fault', 'created_date', 'resolution_date', 'business_hours_fault'
         ])
-        return empty_df, []
+        return empty_df, get_sample_sop_documents()
 
 def search_sop_documents_cortex(query, fault_code=None, equipment_type=None):
     """Search SOP documents using Snowflake stored procedures"""
