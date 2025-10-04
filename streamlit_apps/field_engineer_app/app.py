@@ -529,9 +529,9 @@ def main():
     
     # Display chart availability status
     if PLOTLY_AVAILABLE:
-        st.success("📊 Advanced interactive charts enabled")
+        st.success("📊 Advanced interactive charts enabled (Plotly loaded successfully)")
     else:
-        st.info("📊 Using Streamlit native charts (Plotly not available in this environment)")
+        st.warning("📊 Using Streamlit native charts - Plotly not available in this environment")
     
     # Load data
     df, sop_docs = load_fault_data()

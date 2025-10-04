@@ -65,8 +65,8 @@ When creating the Streamlit app in Snowflake, you can specify a `requirements.tx
 ```txt
 streamlit>=1.30.0
 pandas>=2.0.0
-plotly>=5.0.0
 numpy>=1.24.0
+# Note: plotly is handled conditionally in the app code
 ```
 
 ### Option 2: Manual Installation
@@ -78,10 +78,10 @@ If dependencies are not automatically installed, you may need to contact your Sn
 
 #### Issue: `ModuleNotFoundError: No module named 'plotly'`
 **Solutions:**
-1. **Check requirements.txt**: Ensure `plotly>=5.0.0` is listed
-2. **Verify app deployment**: Make sure requirements.txt was uploaded with the app
-3. **Contact admin**: Snowflake admin may need to install packages manually
-4. **Use fallback approach**: The field engineer app now includes conditional imports that gracefully handle missing Plotly
+1. **Expected behavior**: Plotly is intentionally NOT in requirements.txt to avoid deployment issues
+2. **Conditional imports**: Both apps handle missing Plotly gracefully with fallback charts
+3. **Check status message**: Apps will show "Using Streamlit native charts" when Plotly is unavailable
+4. **No action needed**: This is the intended behavior for robust deployment
 
 **Fallback Implementation:**
 ```python
