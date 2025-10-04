@@ -101,7 +101,7 @@ LANGUAGE SQL
 AS
 $$
     -- Base score by category
-    CASE FAULT_CATEGORY
+    (CASE FAULT_CATEGORY
         WHEN 'Cable Fault' THEN 0.8
         WHEN 'Major' THEN 0.5
         WHEN 'Minor' THEN 0.2
@@ -122,7 +122,7 @@ $$
         WHEN EQUIPMENT_TYPE LIKE '%Cisco%' THEN 0.05
         WHEN EQUIPMENT_TYPE LIKE '%Nokia%' THEN 0.05
         ELSE 0.0
-    END
+    END)::FLOAT
 $$;
 
 -- Technician Recommendation Function
