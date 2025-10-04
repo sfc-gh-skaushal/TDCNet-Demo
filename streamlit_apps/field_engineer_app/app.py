@@ -15,9 +15,23 @@ try:
     import plotly.express as px
     import plotly.graph_objects as go
     PLOTLY_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     PLOTLY_AVAILABLE = False
     # Create dummy objects to prevent errors
+    class DummyPlotly:
+        def bar(self, *args, **kwargs):
+            return None
+        def line(self, *args, **kwargs):
+            return None
+        def pie(self, *args, **kwargs):
+            return None
+        def scatter(self, *args, **kwargs):
+            return None
+    px = DummyPlotly()
+    go = DummyPlotly()
+except Exception as e:
+    # Catch any other exceptions during import
+    PLOTLY_AVAILABLE = False
     class DummyPlotly:
         def bar(self, *args, **kwargs):
             return None
@@ -519,6 +533,9 @@ def display_repair_procedure(fault_info, sop_docs):
 
 def main():
     """Main application"""
+    # Debug information
+    st.write(f"🔍 Debug: PLOTLY_AVAILABLE = {PLOTLY_AVAILABLE}")
+    
     # Header
     st.markdown("""
     <div class="main-header">

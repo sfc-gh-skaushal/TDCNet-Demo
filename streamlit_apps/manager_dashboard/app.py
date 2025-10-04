@@ -14,9 +14,33 @@ try:
     import plotly.express as px
     import plotly.graph_objects as go
     PLOTLY_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     PLOTLY_AVAILABLE = False
     # Create dummy objects to prevent errors
+    class DummyPlotly:
+        def bar(self, *args, **kwargs):
+            return None
+        def line(self, *args, **kwargs):
+            return None
+        def pie(self, *args, **kwargs):
+            return None
+        def scatter(self, *args, **kwargs):
+            return None
+        def histogram(self, *args, **kwargs):
+            return None
+    px = DummyPlotly()
+    
+    class DummyGO:
+        def Figure(self, *args, **kwargs):
+            return None
+        def Bar(self, *args, **kwargs):
+            return None
+        def Scatter(self, *args, **kwargs):
+            return None
+    go = DummyGO()
+except Exception as e:
+    # Catch any other exceptions during import
+    PLOTLY_AVAILABLE = False
     class DummyPlotly:
         def bar(self, *args, **kwargs):
             return None
@@ -354,6 +378,9 @@ def display_fault_triage_table(df):
 
 def main():
     """Main application"""
+    # Debug information
+    st.write(f"🔍 Debug: PLOTLY_AVAILABLE = {PLOTLY_AVAILABLE}")
+    
     # Header
     st.title("🔧 TDC Net Network Operations Dashboard")
     st.markdown("**Proactive Fault Triage & Technician Dispatch Optimization**")
