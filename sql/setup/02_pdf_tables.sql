@@ -1,0 +1,205 @@
+-- TDC Net Snowflake Demo - PDF Document Tables
+-- Creates tables for PDF-based SOP documents with chunking pipeline
+
+USE DATABASE TELCO_DEMO;
+USE SCHEMA NETWORK_OPS;
+USE WAREHOUSE SID_WH;
+
+-- Table to store PDF files from directory table
+CREATE OR REPLACE TABLE SOP_PDF_FILES (
+    FILE_PATH VARCHAR(500) PRIMARY KEY,
+    FILE_URL VARCHAR(1000),
+    FILE_SIZE INTEGER,
+    LAST_MODIFIED TIMESTAMP_NTZ,
+    ETAG VARCHAR(100),
+    MD5 VARCHAR(32),
+    FILE_STATUS VARCHAR(20) DEFAULT 'ACTIVE',
+    CREATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    UPDATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+) COMMENT = 'Table storing PDF files from SOP_DOCUMENTS_STAGE directory table';
+
+-- Table to store document metadata extracted from PDF files
+CREATE OR REPLACE TABLE SOP_DOCUMENT_METADATA (
+    DOCUMENT_ID VARCHAR(50) PRIMARY KEY,
+    FILE_PATH VARCHAR(500),
+    TITLE VARCHAR(500),
+    CATEGORY VARCHAR(100),
+    EQUIPMENT_TYPES ARRAY,
+    FAULT_CODES ARRAY,
+    DOCUMENT_VERSION VARCHAR(20) DEFAULT '1.0',
+    AUTHOR VARCHAR(100) DEFAULT 'TDC Net Engineering',
+    CREATION_DATE DATE DEFAULT CURRENT_DATE(),
+    LAST_REVIEWED DATE DEFAULT CURRENT_DATE(),
+    PAGE_COUNT INTEGER,
+    WORD_COUNT INTEGER,
+    IS_ACTIVE BOOLEAN DEFAULT TRUE,
+    CREATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    UPDATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    
+    -- Foreign key relationship
+    FOREIGN KEY (FILE_PATH) REFERENCES SOP_PDF_FILES(FILE_PATH)
+) COMMENT = 'Metadata for PDF SOP documents';
+
+-- Table to store meaningful chunks with size 200 characters
+CREATE OR REPLACE TABLE SOP_DOCUMENT_CHUNKS (
+    CHUNK_ID VARCHAR(100) PRIMARY KEY,
+    DOCUMENT_ID VARCHAR(50),
+    FILE_PATH VARCHAR(500),
+    CHUNK_SEQUENCE INTEGER,
+    CHUNK_TEXT VARCHAR(200), -- Fixed chunk size of 200 characters
+    CHUNK_TYPE VARCHAR(50), -- 'HEADER', 'PROCEDURE', 'SAFETY', 'DIAGNOSTIC', 'VERIFICATION'
+    SECTION_NAME VARCHAR(200),
+    PAGE_NUMBER INTEGER,
+    CHAR_START_POSITION INTEGER,
+    CHAR_END_POSITION INTEGER,
+    IS_MEANINGFUL BOOLEAN DEFAULT TRUE, -- Only meaningful chunks
+    CREATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    
+    -- Foreign key relationships
+    FOREIGN KEY (DOCUMENT_ID) REFERENCES SOP_DOCUMENT_METADATA(DOCUMENT_ID),
+    FOREIGN KEY (FILE_PATH) REFERENCES SOP_PDF_FILES(FILE_PATH)
+) COMMENT = 'Meaningful text chunks (200 chars) extracted from PDF documents';
+
+-- Enable change tracking on chunks table (required for Cortex Search)
+ALTER TABLE SOP_DOCUMENT_CHUNKS SET CHANGE_TRACKING = TRUE;
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS IDX_CHUNKS_DOCUMENT_ID ON SOP_DOCUMENT_CHUNKS(DOCUMENT_ID);
+CREATE INDEX IF NOT EXISTS IDX_CHUNKS_TYPE ON SOP_DOCUMENT_CHUNKS(CHUNK_TYPE);
+CREATE INDEX IF NOT EXISTS IDX_CHUNKS_MEANINGFUL ON SOP_DOCUMENT_CHUNKS(IS_MEANINGFUL);
+CREATE INDEX IF NOT EXISTS IDX_METADATA_CATEGORY ON SOP_DOCUMENT_METADATA(CATEGORY);
+CREATE INDEX IF NOT EXISTS IDX_FILES_STATUS ON SOP_PDF_FILES(FILE_STATUS);
+
+-- Create view for searchable chunks (only meaningful ones)
+CREATE OR REPLACE VIEW VW_SEARCHABLE_CHUNKS AS
+SELECT 
+    c.CHUNK_ID,
+    c.DOCUMENT_ID,
+    m.TITLE AS DOCUMENT_TITLE,
+    m.CATEGORY,
+    m.EQUIPMENT_TYPES,
+    m.FAULT_CODES,
+    c.CHUNK_SEQUENCE,
+    c.CHUNK_TEXT,
+    c.CHUNK_TYPE,
+    c.SECTION_NAME,
+    c.PAGE_NUMBER,
+    c.CHAR_START_POSITION,
+    c.CHAR_END_POSITION,
+    m.DOCUMENT_VERSION,
+    m.LAST_REVIEWED,
+    f.FILE_URL,
+    f.LAST_MODIFIED AS FILE_LAST_MODIFIED
+FROM SOP_DOCUMENT_CHUNKS c
+JOIN SOP_DOCUMENT_METADATA m ON c.DOCUMENT_ID = m.DOCUMENT_ID
+JOIN SOP_PDF_FILES f ON c.FILE_PATH = f.FILE_PATH
+WHERE m.IS_ACTIVE = TRUE 
+  AND f.FILE_STATUS = 'ACTIVE'
+  AND c.IS_MEANINGFUL = TRUE;
+
+-- Procedure to refresh PDF files from directory table
+CREATE OR REPLACE PROCEDURE REFRESH_PDF_FILES()
+RETURNS STRING
+LANGUAGE SQL
+AS
+$$
+BEGIN
+    -- Refresh PDF files table with current stage contents
+    MERGE INTO SOP_PDF_FILES AS target
+    USING (
+        SELECT 
+            RELATIVE_PATH AS FILE_PATH,
+            FILE_URL,
+            SIZE AS FILE_SIZE,
+            LAST_MODIFIED,
+            ETAG,
+            MD5
+        FROM DIRECTORY(@SOP_DOCUMENTS_STAGE)
+        WHERE RELATIVE_PATH LIKE '%.pdf'
+    ) AS source
+    ON target.FILE_PATH = source.FILE_PATH
+    WHEN MATCHED THEN
+        UPDATE SET
+            FILE_URL = source.FILE_URL,
+            FILE_SIZE = source.FILE_SIZE,
+            LAST_MODIFIED = source.LAST_MODIFIED,
+            ETAG = source.ETAG,
+            MD5 = source.MD5,
+            UPDATED_TIMESTAMP = CURRENT_TIMESTAMP()
+    WHEN NOT MATCHED THEN
+        INSERT (FILE_PATH, FILE_URL, FILE_SIZE, LAST_MODIFIED, ETAG, MD5)
+        VALUES (source.FILE_PATH, source.FILE_URL, source.FILE_SIZE, 
+                source.LAST_MODIFIED, source.ETAG, source.MD5);
+    
+    RETURN 'PDF files table refreshed successfully';
+END;
+$$;
+
+-- Function to create meaningful chunks of exactly 200 characters
+CREATE OR REPLACE FUNCTION CREATE_MEANINGFUL_CHUNKS(
+    FULL_TEXT VARCHAR,
+    DOCUMENT_ID VARCHAR,
+    FILE_PATH VARCHAR
+)
+RETURNS TABLE (
+    CHUNK_SEQUENCE INTEGER,
+    CHUNK_TEXT VARCHAR,
+    CHUNK_TYPE VARCHAR,
+    SECTION_NAME VARCHAR,
+    CHAR_START INTEGER,
+    CHAR_END INTEGER
+)
+LANGUAGE SQL
+AS
+$$
+    WITH text_processing AS (
+        SELECT 
+            FULL_TEXT,
+            LENGTH(FULL_TEXT) AS TOTAL_LENGTH,
+            -- Calculate number of chunks needed (200 chars each)
+            CEIL(LENGTH(FULL_TEXT) / 200.0) AS TOTAL_CHUNKS
+    ),
+    chunk_generation AS (
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY seq) AS CHUNK_SEQUENCE,
+            -- Extract 200-character chunks
+            SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200) AS CHUNK_TEXT,
+            -- Determine chunk type based on content
+            CASE 
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%SAFETY%' THEN 'SAFETY'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%DIAGNOSTIC%' THEN 'DIAGNOSTIC'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%PROCEDURE%' THEN 'PROCEDURE'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%VERIFICATION%' THEN 'VERIFICATION'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%REPAIR%' THEN 'PROCEDURE'
+                ELSE 'CONTENT'
+            END AS CHUNK_TYPE,
+            -- Extract section name from chunk content
+            CASE 
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%SAFETY%' THEN 'Safety Requirements'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%DIAGNOSTIC%' THEN 'Diagnostic Steps'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%PROCEDURE%' THEN 'Repair Procedure'
+                WHEN UPPER(SUBSTR(FULL_TEXT, ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1, 200)) LIKE '%VERIFICATION%' THEN 'Verification Steps'
+                ELSE 'General Content'
+            END AS SECTION_NAME,
+            ((ROW_NUMBER() OVER (ORDER BY seq) - 1) * 200) + 1 AS CHAR_START,
+            LEAST(ROW_NUMBER() OVER (ORDER BY seq) * 200, LENGTH(FULL_TEXT)) AS CHAR_END
+        FROM text_processing,
+        TABLE(GENERATOR(ROWCOUNT => (SELECT TOTAL_CHUNKS FROM text_processing))) AS seq
+    )
+    SELECT 
+        CHUNK_SEQUENCE,
+        CHUNK_TEXT,
+        CHUNK_TYPE,
+        SECTION_NAME,
+        CHAR_START,
+        CHAR_END
+    FROM chunk_generation
+    WHERE LENGTH(TRIM(CHUNK_TEXT)) > 10 -- Only meaningful chunks with content
+$$;
+
+-- Display table creation summary
+SELECT 'PDF document tables created successfully!' AS STATUS;
+
+-- Show created objects
+SHOW TABLES LIKE 'SOP_%';
+SHOW PROCEDURES LIKE '%PDF%';

@@ -44,11 +44,11 @@ CREATE OR REPLACE STAGE FAULT_DATA_STAGE
 FILE_FORMAT = CSV_FORMAT
 COMMENT = 'Stage for network fault log data';
 
+-- Create directory-enabled stage for PDF SOP documents
 CREATE OR REPLACE STAGE SOP_DOCUMENTS_STAGE
-FILE_FORMAT = JSON_FORMAT
 DIRECTORY = (ENABLE = TRUE)
 ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
-COMMENT = 'Stage for SOP documents and technical manuals';
+COMMENT = 'Stage for PDF SOP documents with directory table support';
 
 -- Display setup completion
 SELECT 'TDC Net Demo database setup completed successfully!' AS STATUS;
