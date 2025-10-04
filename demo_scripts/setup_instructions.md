@@ -30,10 +30,10 @@ USE ROLE SYSADMIN;
 -- Copy and paste contents from: sql/setup/01_database_setup.sql
 ```
 
-### 1.2 Create Tables and Objects
+### 1.2 Create PDF Pipeline Tables
 ```sql
--- Execute table creation script
--- Copy and paste contents from: sql/setup/02_table_creation.sql
+-- Execute PDF pipeline table creation script
+-- Copy and paste contents from: sql/setup/02_pdf_tables.sql
 ```
 
 ### 1.3 Verify Cortex AI Functions
@@ -74,10 +74,10 @@ PUT file://data/sample_fault_logs/network_faults.csv @TELCO_DEMO.NETWORK_OPS.FAU
 PUT file://data/sample_sop_documents/*.json @TELCO_DEMO.NETWORK_OPS.SOP_DOCUMENTS_STAGE;
 ```
 
-### 2.2 Create PDF Document Tables
+### 2.2 Verify PDF Tables Created
 ```sql
--- Execute PDF document table setup
--- Copy and paste contents from: sql/setup/02_pdf_tables.sql
+-- Verify PDF pipeline tables were created in step 1.2
+SHOW TABLES LIKE 'SOP_%';
 ```
 
 ### 2.3 Upload PDF Documents to Stage
@@ -133,7 +133,7 @@ SELECT COUNT(*) FROM VW_SEARCHABLE_CHUNKS;
 -- Copy and paste contents from: sql/cortex_models/fault_classification.sql
 ```
 
-### 3.2 Deploy Chunked Cortex Search Service  
+### 3.2 Deploy Cortex Search Service on Chunks
 ```sql
 -- Execute Cortex Search setup on chunked data
 -- Copy and paste contents from: sql/cortex_models/cortex_search_chunks.sql
