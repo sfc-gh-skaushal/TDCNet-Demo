@@ -135,12 +135,8 @@ def load_fault_data():
         # Load fault data from Snowflake
         df = session.table("VW_NETWORK_FAULTS_ENHANCED").to_pandas()
         
-        # Debug: Show available columns
-        st.write(f"🔍 Available columns: {list(df.columns)}")
-        
         # Normalize column names to lowercase for consistent access
         df.columns = df.columns.str.lower()
-        st.write(f"🔍 Normalized columns: {list(df.columns)}")
         
         # Handle different possible column name variations
         timestamp_col = None
@@ -606,9 +602,6 @@ def display_repair_procedure(fault_info, sop_docs):
 
 def main():
     """Main application"""
-    # Debug information
-    st.write(f"🔍 Debug: PLOTLY_AVAILABLE = {PLOTLY_AVAILABLE}")
-    
     # Header
     st.markdown("""
     <div class="main-header">
@@ -617,11 +610,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # Display chart availability status
-    if PLOTLY_AVAILABLE:
-        st.success("📊 Advanced interactive charts enabled (Plotly loaded successfully)")
-    else:
-        st.warning("📊 Using Streamlit native charts - Plotly not available in this environment")
+    # Charts use Streamlit native components for reliable deployment
     
     # Load data
     df, sop_docs = load_fault_data()

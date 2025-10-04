@@ -107,20 +107,13 @@ def load_fault_data():
     """Load fault data from Snowflake"""
     try:
         # Get Snowflake session
-        st.write("🔍 Getting Snowflake session...")
         session = snowflake.snowpark.context.get_active_session()
         
         # Load fault data from Snowflake enhanced view
-        st.write("🔍 Loading data from VW_NETWORK_FAULTS_ENHANCED...")
         df = session.table("VW_NETWORK_FAULTS_ENHANCED").to_pandas()
-        st.write(f"🔍 Data loaded successfully. Shape: {df.shape}")
-        
-        # Debug: Show available columns
-        st.write(f"🔍 Available columns: {list(df.columns)}")
         
         # Normalize column names to lowercase for consistent access
         df.columns = df.columns.str.lower()
-        st.write(f"🔍 Normalized columns: {list(df.columns)}")
         
         # Handle different possible column name variations
         timestamp_col = None
@@ -423,20 +416,11 @@ def display_fault_triage_table(df):
 
 def main():
     """Main application"""
-    # Debug information
-    st.write(f"🔍 Debug: PLOTLY_AVAILABLE = {PLOTLY_AVAILABLE}")
-    
     # Header
     st.title("🔧 TDC Net Network Operations Dashboard")
     st.markdown("**Proactive Fault Triage & Technician Dispatch Optimization**")
     
-    # Display chart availability status
-    if PLOTLY_AVAILABLE:
-        st.success("📊 Advanced interactive charts enabled (Plotly loaded successfully)")
-    else:
-        st.warning("📊 Using Streamlit native charts - Plotly not available in this environment")
-    
-    # Data loads fresh each time (no caching)
+    # Charts use Streamlit native components for reliable deployment
     
     # Load data
     df = load_fault_data()
