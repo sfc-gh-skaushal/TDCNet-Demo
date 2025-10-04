@@ -9,6 +9,11 @@ USE WAREHOUSE SID_WH;
 ALTER TABLE SOP_DOCUMENT_CHUNKS SET CHANGE_TRACKING = TRUE;
 
 -- Create Cortex Search Service on the chunked data
+-- NOTE: Cortex Search Service may not be available in all Snowflake environments
+-- The functions below provide fallback functionality using standard SQL
+
+/*
+-- Uncomment this section when Cortex Search Service is available in your environment
 CREATE OR REPLACE CORTEX SEARCH SERVICE SOP_CHUNKS_SEARCH_SERVICE
     ON CHUNK_TEXT  -- The column containing the text to search
     ATTRIBUTES DOCUMENT_ID, CHUNK_TYPE, SECTION_NAME, PAGE_NUMBER, CHUNK_SEQUENCE
@@ -39,8 +44,9 @@ CREATE OR REPLACE CORTEX SEARCH SERVICE SOP_CHUNKS_SEARCH_SERVICE
 
 -- Grant usage permissions on the Cortex Search Service
 GRANT USAGE ON CORTEX SEARCH SERVICE SOP_CHUNKS_SEARCH_SERVICE TO ROLE PUBLIC;
+*/
 
--- Function to search chunks with filters
+-- Function to search chunks with filters (Simulated Cortex Search)
 CREATE OR REPLACE FUNCTION SEARCH_SOP_CHUNKS(
     QUERY_TEXT VARCHAR,
     CHUNK_TYPE VARCHAR DEFAULT NULL,
@@ -64,6 +70,47 @@ RETURNS TABLE (
 LANGUAGE SQL
 AS
 $$
+    WITH search_results AS (
+        SELECT
+            c.CHUNK_ID,
+            c.DOCUMENT_ID,
+            m.TITLE AS DOCUMENT_TITLE,
+            m.CATEGORY,
+            c.CHUNK_TEXT,
+            c.CHUNK_TYPE,
+            c.SECTION_NAME,
+            c.PAGE_NUMBER,
+            c.CHUNK_SEQUENCE,
+            m.EQUIPMENT_TYPES,
+            -- Simulate relevance scoring based on text matching
+            CASE 
+                WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.9
+                WHEN UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(QUERY_TEXT, ' ', 1)) || '%' THEN 0.7
+                WHEN UPPER(c.SECTION_NAME) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.6
+                WHEN UPPER(m.TITLE) LIKE '%' || UPPER(QUERY_TEXT) || '%' THEN 0.5
+                ELSE 0.3
+            END AS RELEVANCE_SCORE,
+            CASE 
+                WHEN EQUIPMENT_TYPE IS NOT NULL THEN 
+                    ARRAYS_OVERLAP(m.EQUIPMENT_TYPES, ARRAY_CONSTRUCT(EQUIPMENT_TYPE))
+                ELSE TRUE
+            END AS EQUIPMENT_MATCH
+        FROM SOP_DOCUMENT_CHUNKS c
+        JOIN SOP_DOCUMENT_METADATA m ON c.DOCUMENT_ID = m.DOCUMENT_ID
+        WHERE m.IS_ACTIVE = TRUE 
+          AND c.IS_MEANINGFUL = TRUE
+          AND LENGTH(TRIM(c.CHUNK_TEXT)) > 20
+          -- Apply filters
+          AND (CHUNK_TYPE IS NULL OR c.CHUNK_TYPE = CHUNK_TYPE)
+          AND (DOCUMENT_CATEGORY IS NULL OR m.CATEGORY = DOCUMENT_CATEGORY)
+          -- Text search simulation
+          AND (
+              UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(QUERY_TEXT) || '%'
+              OR UPPER(c.SECTION_NAME) LIKE '%' || UPPER(QUERY_TEXT) || '%'
+              OR UPPER(m.TITLE) LIKE '%' || UPPER(QUERY_TEXT) || '%'
+              OR UPPER(c.CHUNK_TEXT) LIKE '%' || UPPER(SPLIT_PART(QUERY_TEXT, ' ', 1)) || '%'
+          )
+    )
     SELECT
         CHUNK_ID,
         DOCUMENT_ID,
@@ -75,42 +122,11 @@ $$
         PAGE_NUMBER,
         CHUNK_SEQUENCE,
         RELEVANCE_SCORE,
-        CASE 
-            WHEN EQUIPMENT_TYPE IS NOT NULL THEN 
-                ARRAYS_OVERLAP(EQUIPMENT_TYPES, ARRAY_CONSTRUCT(EQUIPMENT_TYPE))
-            ELSE TRUE
-        END AS EQUIPMENT_MATCH
-    FROM TABLE(SNOWFLAKE.CORTEX.SEARCH(
-        'SOP_CHUNKS_SEARCH_SERVICE',
-        CASE 
-            WHEN CHUNK_TYPE IS NOT NULL OR DOCUMENT_CATEGORY IS NOT NULL THEN
-                OBJECT_CONSTRUCT(
-                    'query', QUERY_TEXT,
-                    'filter', OBJECT_CONSTRUCT(
-                        'and', ARRAY_COMPACT(ARRAY_CONSTRUCT(
-                            CASE WHEN CHUNK_TYPE IS NOT NULL THEN 
-                                OBJECT_CONSTRUCT('@eq', OBJECT_CONSTRUCT('CHUNK_TYPE', CHUNK_TYPE))
-                            END,
-                            CASE WHEN DOCUMENT_CATEGORY IS NOT NULL THEN 
-                                OBJECT_CONSTRUCT('@eq', OBJECT_CONSTRUCT('CATEGORY', DOCUMENT_CATEGORY))
-                            END
-                        ))
-                    ),
-                    'limit', RESULT_LIMIT
-                )
-            ELSE
-                OBJECT_CONSTRUCT(
-                    'query', QUERY_TEXT,
-                    'limit', RESULT_LIMIT
-                )
-        END
-    ))
-    WHERE CASE 
-        WHEN EQUIPMENT_TYPE IS NOT NULL THEN 
-            ARRAYS_OVERLAP(EQUIPMENT_TYPES, ARRAY_CONSTRUCT(EQUIPMENT_TYPE))
-        ELSE TRUE
-    END
+        EQUIPMENT_MATCH
+    FROM search_results
+    WHERE EQUIPMENT_MATCH = TRUE
     ORDER BY RELEVANCE_SCORE DESC
+    LIMIT RESULT_LIMIT
 $$;
 
 -- Function to get contextual chunks (surrounding chunks for better context)
@@ -341,8 +357,8 @@ $$
     LIMIT RESULT_LIMIT
 $$;
 
--- Test the Cortex Search Service
-SELECT 'Testing Cortex Search Service on Chunked Data:' AS TEST_STATUS;
+-- Test the Simulated Search Functions
+SELECT 'Testing Simulated Cortex Search on Chunked Data:' AS TEST_STATUS;
 
 -- Test basic search
 SELECT 'Basic Search Test - Cable Fault:' AS TEST_NAME;
@@ -363,13 +379,18 @@ SELECT ASK_TECHNICAL_QUESTION(
     '812.3'
 ) AS AI_RESPONSE;
 
--- Show service status
-SELECT 'Cortex Search Service Status:' AS INFO;
-SHOW CORTEX SEARCH SERVICES LIKE 'SOP_CHUNKS_SEARCH_SERVICE';
+-- Show available chunks for search
+SELECT 'Simulated Search Functions Status:' AS INFO;
+SELECT 'Available Chunks for Search:' AS CHUNK_STATUS;
+SELECT 
+    COUNT(*) AS TOTAL_CHUNKS,
+    COUNT(DISTINCT DOCUMENT_ID) AS TOTAL_DOCUMENTS,
+    COUNT(DISTINCT CHUNK_TYPE) AS CHUNK_TYPES
+FROM SOP_DOCUMENT_CHUNKS 
+WHERE IS_MEANINGFUL = TRUE;
 
 -- Display completion message
-SELECT 'Cortex Search Service on chunked data created successfully!' AS FINAL_STATUS;
-SELECT 'Service Name: SOP_CHUNKS_SEARCH_SERVICE' AS SERVICE_INFO;
+SELECT 'Simulated Cortex Search functions created successfully!' AS FINAL_STATUS;
+SELECT 'Functions: SEARCH_SOP_CHUNKS, ASK_TECHNICAL_QUESTION, GENERATE_REPAIR_PROCEDURE' AS FUNCTION_INFO;
 SELECT 'Chunk Size: 200 characters' AS CHUNK_INFO;
-SELECT 'Total Chunks Indexed: ' || COUNT(*) || ' chunks' AS TOTAL_CHUNKS
-FROM VW_SEARCHABLE_CHUNKS;
+SELECT 'Search Method: SQL-based text matching with relevance scoring' AS SEARCH_METHOD;
