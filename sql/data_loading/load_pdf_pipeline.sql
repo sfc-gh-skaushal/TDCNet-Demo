@@ -16,19 +16,19 @@ INSERT INTO SOP_PDF_FILES (
     FILE_PATH, FILE_URL, FILE_SIZE, LAST_MODIFIED, ETAG, MD5
 ) VALUES 
 ('SOP-001_Cable_Fault_Resolution_Procedures.pdf', 
- 'sfc-demo-stage/sop-001.pdf', 3980, CURRENT_TIMESTAMP(), 
+ 'sfc-demo-stage/sop-001.pdf', 3980, CURRENT_TIMESTAMP()::TIMESTAMP_NTZ, 
  'abc123def456', 'a1b2c3d4e5f6'),
 ('SOP-002_Service_Degradation_Troubleshooting.pdf', 
- 'sfc-demo-stage/sop-002.pdf', 3861, CURRENT_TIMESTAMP(), 
+ 'sfc-demo-stage/sop-002.pdf', 3861, CURRENT_TIMESTAMP()::TIMESTAMP_NTZ, 
  'def456ghi789', 'b2c3d4e5f6g7'),
 ('SOP-003_Signal_Level_Adjustment_Procedures.pdf', 
- 'sfc-demo-stage/sop-003.pdf', 3755, CURRENT_TIMESTAMP(), 
+ 'sfc-demo-stage/sop-003.pdf', 3755, CURRENT_TIMESTAMP()::TIMESTAMP_NTZ, 
  'ghi789jkl012', 'c3d4e5f6g7h8'),
 ('SOP-004_Emergency_Network_Response_Procedures.pdf', 
- 'sfc-demo-stage/sop-004.pdf', 3666, CURRENT_TIMESTAMP(), 
+ 'sfc-demo-stage/sop-004.pdf', 3666, CURRENT_TIMESTAMP()::TIMESTAMP_NTZ, 
  'jkl012mno345', 'd4e5f6g7h8i9'),
 ('SOP-005_Network_Security_Incident_Response.pdf', 
- 'sfc-demo-stage/sop-005.pdf', 3522, CURRENT_TIMESTAMP(), 
+ 'sfc-demo-stage/sop-005.pdf', 3522, CURRENT_TIMESTAMP()::TIMESTAMP_NTZ, 
  'mno345pqr678', 'e5f6g7h8i9j0')
 ON CONFLICT (FILE_PATH) DO NOTHING;
 
