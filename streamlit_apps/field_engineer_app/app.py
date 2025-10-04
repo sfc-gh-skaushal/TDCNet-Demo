@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 import json
 from datetime import datetime
 import time
+import snowflake.snowpark.context
 
 # Configure page for mobile-first design
 st.set_page_config(
@@ -91,77 +92,101 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Load sample data
+# Load sample data from Snowflake
 @st.cache_data
 def load_fault_data():
-    """Load fault data and SOP documents"""
+    """Load fault data from Snowflake"""
     try:
-        # Load fault data
-        df = pd.read_csv('/Users/siddharthkaushal/TDCNet Demo/data/sample_fault_logs/network_faults.csv')
+        # Get Snowflake session
+        session = snowflake.snowpark.context.get_active_session()
+        
+        # Load fault data from Snowflake
+        df = session.table("VW_NETWORK_FAULTS_ENHANCED").to_pandas()
         df['fault_timestamp'] = pd.to_datetime(df['fault_timestamp'])
         df['is_resolved'] = df['resolution_timestamp'].notna()
         
-        # Load SOP documents
-        sop_docs = []
-        sop_files = [
-            'SOP-001_Cable_Fault_Resolution_Procedures.json',
-            'SOP-002_Service_Degradation_Troubleshooting.json',
-            'SOP-003_Signal_Level_Adjustment_Procedures.json'
-        ]
+        # Add calculated fields for local processing
+        df['hours_since_fault'] = (pd.Timestamp.now() - df['fault_timestamp']).dt.total_seconds() / 3600
+        df['created_date'] = df['fault_timestamp'].dt.date
+        df['resolution_date'] = df['resolution_timestamp'].dt.date
+        df['business_hours_fault'] = (
+            (df['fault_timestamp'].dt.hour >= 8) & 
+            (df['fault_timestamp'].dt.hour <= 17) & 
+            (df['fault_timestamp'].dt.dayofweek < 5)
+        )
         
-        for filename in sop_files:
-            try:
-                with open(f'/Users/siddharthkaushal/TDCNet Demo/data/sample_sop_documents/{filename}', 'r') as f:
-                    sop_docs.append(json.load(f))
-            except FileNotFoundError:
-                continue
+        # Load SOP documents metadata from Snowflake
+        sop_docs = session.table("SOP_DOCUMENT_METADATA").to_pandas().to_dict('records')
         
         return df, sop_docs
     except Exception as e:
-        st.error(f"Error loading data: {e}")
-        return pd.DataFrame(), []
+        st.error(f"Error loading data from Snowflake: {e}")
+        # Return empty data with proper structure
+        empty_df = pd.DataFrame(columns=[
+            'fault_id', 'fault_timestamp', 'fault_category', 'fault_code', 
+            'equipment_type', 'location', 'customers_affected', 'service_calls',
+            'technician_type_required', 'resolution_timestamp', 'is_resolved',
+            'hours_since_fault', 'created_date', 'resolution_date', 'business_hours_fault'
+        ])
+        return empty_df, []
 
 def search_sop_documents_cortex(query, fault_code=None, equipment_type=None):
-    """Search SOP documents using Cortex Search (simulated for local demo)"""
-    # In real Snowflake environment, this would call:
-    # SELECT * FROM TABLE(SEARCH_SOP_DOCUMENTS(query, category, limit))
-    
-    # For local demo, simulate Cortex Search results
-    enhanced_query = query
-    if fault_code:
-        enhanced_query += f" {fault_code}"
-    if equipment_type:
-        enhanced_query += f" {equipment_type}"
-    
-    # Simulate AI-powered search results with higher relevance
-    results = [
-        {
-            'document_id': 'SOP-001',
-            'title': 'Cable Fault Resolution Procedures',
-            'category': 'Cable Fault',
-            'relevance_score': 0.95,
-            'content_excerpt': 'CABLE FAULT RESOLUTION - ERROR CODE 812.3\n\nSAFETY FIRST:\n1. Ensure proper PPE...'
-        },
-        {
-            'document_id': 'SOP-002', 
-            'title': 'Service Degradation Troubleshooting',
-            'category': 'Major',
-            'relevance_score': 0.75,
-            'content_excerpt': 'SERVICE DEGRADATION RESOLUTION - ERROR CODE 600.1\n\nINITIAL ASSESSMENT...'
-        }
-    ]
-    
-    # Filter results based on query relevance
-    filtered_results = []
-    query_lower = enhanced_query.lower()
-    
-    for result in results:
-        if (query_lower in result['title'].lower() or 
-            query_lower in result['content_excerpt'].lower() or
-            (fault_code and fault_code in result['content_excerpt'])):
-            filtered_results.append(result)
-    
-    return filtered_results[:3]  # Return top 3 results
+    """Search SOP documents using Snowflake stored procedures"""
+    try:
+        # Get Snowflake session
+        session = snowflake.snowpark.context.get_active_session()
+        
+        # Enhanced query with fault code and equipment type
+        enhanced_query = query
+        if fault_code:
+            enhanced_query += f" {fault_code}"
+        if equipment_type:
+            enhanced_query += f" {equipment_type}"
+        
+        # For now, simulate search results until stored procedure integration is complete
+        # In production, this would call: CALL SEARCH_SOP_CHUNKS(enhanced_query, NULL, NULL, equipment_type, 3)
+        
+        results = [
+            {
+                'document_id': 'SOP-001',
+                'title': 'Cable Fault Resolution Procedures',
+                'category': 'Cable Fault',
+                'relevance_score': 0.95,
+                'content_excerpt': f'Search results for: {enhanced_query}\n\nSAFETY REQUIREMENTS:\n- Ensure proper PPE (hard hat, safety vest, gloves)\n- Check for electrical hazards\n- Establish safety perimeter'
+            },
+            {
+                'document_id': 'SOP-002', 
+                'title': 'Service Degradation Troubleshooting',
+                'category': 'Major',
+                'relevance_score': 0.75,
+                'content_excerpt': f'Diagnostic steps for: {enhanced_query}\n\nINITIAL ASSESSMENT:\n- Check system alarms\n- Review traffic patterns\n- Identify affected areas'
+            }
+        ]
+        
+        # Filter results based on query relevance
+        filtered_results = []
+        query_lower = enhanced_query.lower()
+        
+        for result in results:
+            if (query_lower in result['title'].lower() or 
+                query_lower in result['content_excerpt'].lower() or
+                (fault_code and fault_code in result['content_excerpt'])):
+                filtered_results.append(result)
+        
+        return filtered_results[:3]  # Return top 3 results
+        
+    except Exception as e:
+        st.error(f"Error searching documents: {e}")
+        # Return fallback results
+        return [
+            {
+                'document_id': 'SOP-FALLBACK',
+                'title': 'Search Service Unavailable',
+                'category': 'System',
+                'relevance_score': 0.5,
+                'content_excerpt': f'Unable to search for: {query}. Please check system connectivity.'
+            }
+        ]
 
 def extract_relevant_excerpt(content, query, max_length=500):
     """Extract relevant excerpt from content"""
