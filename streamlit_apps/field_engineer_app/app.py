@@ -339,7 +339,7 @@ def generate_repair_procedure(fault_code, equipment_type, fault_description, sop
                 'Document repair actions and test results'
             ],
             'estimated_time': '2-4 hours',
-            'tools_required': ['Standard toolkit', 'Multimeter', 'Signal analyzer'],
+            'required_tools': ['Standard toolkit', 'Multimeter', 'Signal analyzer'],
             'full_content': f'Generic repair procedure for {fault_description}'
         }
     
@@ -534,25 +534,28 @@ def display_repair_procedure(fault_info, sop_docs):
         </div>
         """, unsafe_allow_html=True)
         
-        for step in procedure['safety_steps']:
+        safety_steps = procedure.get('safety_steps', [])
+        for step in safety_steps:
             st.markdown(f"- {step}")
     
     # Estimated time and tools
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("⏱️ Estimated Time", procedure['estimated_time'])
+        st.metric("⏱️ Estimated Time", procedure.get('estimated_time', 'Unknown'))
     with col2:
-        st.metric("🔧 Tools Required", f"{len(procedure['required_tools'])} items")
+        required_tools = procedure.get('required_tools', ['Standard toolkit'])
+        st.metric("🔧 Tools Required", f"{len(required_tools)} items")
     
     # Required tools
     st.markdown("**Required Tools:**")
-    for tool in procedure['required_tools']:
+    for tool in required_tools:
         st.markdown(f"- {tool}")
     
     # Diagnostic steps
-    if procedure['diagnostic_steps']:
+    diagnostic_steps = procedure.get('diagnostic_steps', [])
+    if diagnostic_steps:
         st.markdown("#### 🔍 Diagnostic Steps")
-        for i, step in enumerate(procedure['diagnostic_steps'], 1):
+        for i, step in enumerate(diagnostic_steps, 1):
             st.markdown(f"""
             <div class="procedure-step">
                 <strong>Step {i}:</strong> {step}
@@ -560,9 +563,10 @@ def display_repair_procedure(fault_info, sop_docs):
             """, unsafe_allow_html=True)
     
     # Repair steps
-    if procedure['repair_steps']:
+    repair_steps = procedure.get('repair_steps', [])
+    if repair_steps:
         st.markdown("#### 🔧 Repair Steps")
-        for i, step in enumerate(procedure['repair_steps'], 1):
+        for i, step in enumerate(repair_steps, 1):
             st.markdown(f"""
             <div class="procedure-step">
                 <strong>Step {i}:</strong> {step}
@@ -570,9 +574,10 @@ def display_repair_procedure(fault_info, sop_docs):
             """, unsafe_allow_html=True)
     
     # Verification steps
-    if procedure['verification_steps']:
+    verification_steps = procedure.get('verification_steps', [])
+    if verification_steps:
         st.markdown("#### ✅ Verification Steps")
-        for i, step in enumerate(procedure['verification_steps'], 1):
+        for i, step in enumerate(verification_steps, 1):
             st.markdown(f"""
             <div class="procedure-step">
                 <strong>Step {i}:</strong> {step}
