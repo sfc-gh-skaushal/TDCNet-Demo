@@ -74,29 +74,53 @@ PUT file://data/sample_fault_logs/network_faults.csv @TELCO_DEMO.NETWORK_OPS.FAU
 PUT file://data/sample_sop_documents/*.json @TELCO_DEMO.NETWORK_OPS.SOP_DOCUMENTS_STAGE;
 ```
 
-### 2.2 Load Data into Tables
+### 2.2 Create PDF Document Tables
+```sql
+-- Execute PDF document table setup
+-- Copy and paste contents from: sql/setup/03_pdf_document_tables.sql
+```
+
+### 2.3 Load Data into Tables
 ```sql
 -- Execute data loading scripts
 -- Copy and paste contents from: sql/data_loading/load_fault_data.sql
--- Copy and paste contents from: sql/data_loading/load_sop_documents.sql
+-- Copy and paste contents from: sql/data_loading/load_pdf_sop_documents.sql
 ```
 
-### 2.3 Verify Data Load
+**Note:** The new approach uses PDF documents stored in Snowflake stages with content extracted into chunks for better search performance.
+
+### 2.4 Upload PDF Documents to Stage
+```bash
+# Upload PDF SOP documents to Snowflake stage
+PUT file://data/sample_sop_documents_pdf/*.pdf @TELCO_DEMO.NETWORK_OPS.SOP_PDF_STAGE;
+
+# Verify upload
+LIST @TELCO_DEMO.NETWORK_OPS.SOP_PDF_STAGE;
+```
+
+### 2.5 Verify Data Load
 ```sql
 -- Check record counts
 SELECT 'NETWORK_FAULTS' AS TABLE_NAME, COUNT(*) AS RECORD_COUNT FROM NETWORK_FAULTS
 UNION ALL
-SELECT 'SOP_DOCUMENTS' AS TABLE_NAME, COUNT(*) AS RECORD_COUNT FROM SOP_DOCUMENTS
+SELECT 'SOP_DIRECTORY' AS TABLE_NAME, COUNT(*) AS RECORD_COUNT FROM SOP_DIRECTORY
+UNION ALL
+SELECT 'SOP_DOCUMENT_METADATA' AS TABLE_NAME, COUNT(*) AS RECORD_COUNT FROM SOP_DOCUMENT_METADATA
+UNION ALL
+SELECT 'SOP_DOCUMENT_CHUNKS' AS TABLE_NAME, COUNT(*) AS RECORD_COUNT FROM SOP_DOCUMENT_CHUNKS
 UNION ALL
 SELECT 'FAULT_CLASSIFICATION_TRAINING' AS TABLE_NAME, COUNT(*) AS RECORD_COUNT FROM FAULT_CLASSIFICATION_TRAINING;
 
 -- Expected results:
 -- NETWORK_FAULTS: 1000 records
--- SOP_DOCUMENTS: 5 records  
+-- SOP_DIRECTORY: 5 PDF files
+-- SOP_DOCUMENT_METADATA: 5 documents
+-- SOP_DOCUMENT_CHUNKS: ~15-20 chunks
 -- FAULT_CLASSIFICATION_TRAINING: 1000 records
 
 -- Also verify the enhanced view
 SELECT COUNT(*) FROM VW_NETWORK_FAULTS_ENHANCED;
+SELECT COUNT(*) FROM VW_SEARCHABLE_SOP_CONTENT;
 ```
 
 ---
@@ -109,32 +133,35 @@ SELECT COUNT(*) FROM VW_NETWORK_FAULTS_ENHANCED;
 -- Copy and paste contents from: sql/cortex_models/fault_classification.sql
 ```
 
-### 3.2 Deploy Cortex Search Service  
+### 3.2 Deploy PDF-based Cortex Search Service  
 ```sql
--- Execute Cortex Search setup
--- Copy and paste contents from: sql/cortex_models/cortex_search_setup.sql
--- Note: This creates a proper Cortex Search Service using Snowflake's native capabilities
+-- Execute PDF Cortex Search setup
+-- Copy and paste contents from: sql/cortex_models/cortex_search_pdf_setup.sql
+-- Note: This creates a Cortex Search Service over PDF document chunks
 ```
 
-**Important:** The Cortex Search Service creation may take several minutes to complete as it builds the search index. Monitor the progress and wait for completion before proceeding.
+**Important:** The PDF Cortex Search Service creation may take several minutes to complete as it builds the search index over document chunks. Monitor the progress and wait for completion before proceeding.
 
 ### 3.3 Test AI Functions
 ```sql
 -- Test fault classification
 SELECT CLASSIFY_FAULT('812.3', 'COAX', 'Cisco cBR-8', 'Copenhagen Central', 1000, 50, 14, 3, TRUE) AS PREDICTED_CATEGORY;
 
--- Test Cortex Search Service
-SELECT * FROM TABLE(SEARCH_SOP_DOCUMENTS('cable fault 812.3 Cisco', NULL, 3));
+-- Test PDF-based Cortex Search Service
+SELECT * FROM TABLE(SEARCH_PDF_SOP_CHUNKS('cable fault 812.3', NULL, 'Cable Fault', NULL, 3));
 
--- Test AI-powered answer extraction
-SELECT ASK_TECHNICAL_QUESTION('How to fix cable fault 812.3 on Cisco equipment?') AS AI_ANSWER;
+-- Test AI-powered answer extraction from PDF chunks
+SELECT ASK_PDF_TECHNICAL_QUESTION('What safety equipment is required for cable fault repair?', NULL, 'SAFETY') AS PDF_AI_ANSWER;
 
--- Test AI procedure generation
-SELECT GENERATE_REPAIR_PROCEDURE('812.3', 'Cisco cBR-8', 'Cable cut detected') AS AI_PROCEDURE;
+-- Test AI procedure generation from PDF chunks
+SELECT GENERATE_PDF_REPAIR_PROCEDURE('812.3', 'Cisco cBR-8', 'Underground cable cut detected') AS PDF_AI_PROCEDURE;
 
--- Verify Cortex Search Service status
+-- Verify PDF Cortex Search Service status
 SHOW CORTEX SEARCH SERVICES;
-DESCRIBE CORTEX SEARCH SERVICE SOP_SEARCH_SERVICE;
+DESCRIBE CORTEX SEARCH SERVICE PDF_SOP_SEARCH_SERVICE;
+
+-- Test searchable content view
+SELECT * FROM VW_SEARCHABLE_SOP_CONTENT LIMIT 5;
 ```
 
 ---
