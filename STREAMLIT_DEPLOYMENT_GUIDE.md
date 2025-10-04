@@ -69,20 +69,7 @@ plotly>=5.0.0
 numpy>=1.24.0
 ```
 
-### Option 2: Conda Environment (Advanced)
-For more complex dependencies, you can create a custom conda environment:
-
-```yaml
-name: tdcnet_demo
-dependencies:
-  - python>=3.8
-  - streamlit>=1.30.0
-  - pandas>=2.0.0
-  - plotly>=5.0.0
-  - numpy>=1.24.0
-```
-
-### Option 3: Manual Installation
+### Option 2: Manual Installation
 If dependencies are not automatically installed, you may need to contact your Snowflake administrator to install packages.
 
 ## Troubleshooting
@@ -120,6 +107,12 @@ except ImportError:
 ```
 
 This approach allows the app to run even when Plotly is not available, using Streamlit's native charting capabilities instead.
+
+#### Issue: `Unsupported Anaconda feature or malformed environment.yml file`
+**Solutions:**
+1. **Remove environment.yml**: Snowflake Streamlit only supports requirements.txt for dependencies
+2. **Use requirements.txt only**: Ensure only requirements.txt is present in your app directory
+3. **Check file format**: Ensure requirements.txt uses the correct pip format (package>=version)
 
 #### Issue: `No module named 'snowflake.snowpark.context'`
 **Solutions:**
