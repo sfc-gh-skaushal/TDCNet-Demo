@@ -102,7 +102,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Load data from Snowflake using native Snowpark session
-@st.cache_data(ttl=60)  # Cache for 60 seconds only
+# Removed caching to prevent stale data issues
 def load_fault_data():
     """Load fault data from Snowflake"""
     try:
@@ -147,11 +147,23 @@ def load_fault_data():
         else:
             df['resolution_timestamp'] = None
         
+        # Ensure required columns exist after normalization
+        required_columns = ['fault_id', 'fault_category', 'priority_score']
+        for col in required_columns:
+            if col not in df.columns:
+                st.warning(f"Missing column: {col}")
+                if col == 'fault_id':
+                    df['fault_id'] = df.index.astype(str)
+                elif col == 'fault_category':
+                    df['fault_category'] = 'Unknown'
+                elif col == 'priority_score':
+                    df['priority_score'] = 0.5
+        
         # Add calculated fields for local processing
         df['hours_since_fault'] = (pd.Timestamp.now() - df['fault_timestamp']).dt.total_seconds() / 3600
         df['is_resolved'] = df['resolution_timestamp'].notna() if resolution_col else False
         df['created_date'] = df['fault_timestamp'].dt.date
-        df['resolution_date'] = df['resolution_timestamp'].dt.date
+        df['resolution_date'] = df['resolution_timestamp'].dt.date if resolution_col else None
         df['business_hours_fault'] = (
             (df['fault_timestamp'].dt.hour >= 8) & 
             (df['fault_timestamp'].dt.hour <= 17) & 
@@ -162,18 +174,18 @@ def load_fault_data():
         try:
             # Get fault classification and triage data
             triage_df = session.table("VW_FAULT_TRIAGE").to_pandas()
+            triage_df.columns = triage_df.columns.str.lower()  # Normalize triage columns too
             
             # Merge ML predictions with fault data
             df = df.merge(
-                triage_df[['FAULT_ID', 'PREDICTED_CATEGORY', 'CALCULATED_PRIORITY_SCORE']], 
-                left_on='fault_id', 
-                right_on='FAULT_ID', 
+                triage_df[['fault_id', 'predicted_category', 'calculated_priority_score']], 
+                on='fault_id', 
                 how='left'
             )
             
             # Use ML predictions or fallback to original values
-            df['predicted_category'] = df['PREDICTED_CATEGORY'].fillna(df['fault_category'])
-            df['calculated_priority_score'] = df['CALCULATED_PRIORITY_SCORE'].fillna(df['priority_score'])
+            df['predicted_category'] = df['predicted_category'].fillna(df['fault_category'])
+            df['calculated_priority_score'] = df['calculated_priority_score'].fillna(df['priority_score'])
             
         except Exception as ml_error:
             st.warning(f"ML predictions unavailable, using original data: {ml_error}")
@@ -424,10 +436,7 @@ def main():
     else:
         st.warning("📊 Using Streamlit native charts - Plotly not available in this environment")
     
-    # Add cache clear button for debugging
-    if st.button("🔄 Clear Cache & Reload Data"):
-        st.cache_data.clear()
-        st.rerun()
+    # Data loads fresh each time (no caching)
     
     # Load data
     df = load_fault_data()
