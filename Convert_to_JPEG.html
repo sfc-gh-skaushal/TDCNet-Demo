@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDCNet Technical Summary - Convert to JPEG</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: white;
+            font-family: Arial, sans-serif;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .instructions {
+            background: #f0f8ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid #007acc;
+        }
+        
+        .svg-container {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+        }
+        
+        svg {
+            width: 100%;
+            height: auto;
+        }
+        
+        .download-instructions {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 5px solid #ffc107;
+        }
+        
+        .step {
+            margin: 10px 0;
+            padding: 8px;
+            background: white;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="instructions">
+            <h2>📸 Convert to JPEG Instructions</h2>
+            <p><strong>To save this technical diagram as a JPEG image:</strong></p>
+            <div class="step">1. Right-click on the diagram below</div>
+            <div class="step">2. Select "Save image as..." or "Copy image"</div>
+            <div class="step">3. Choose JPEG format and save to your desired location</div>
+            <p><em>Alternative: Use browser screenshot tools or print to PDF then convert</em></p>
+        </div>
+        
+        <div class="svg-container">
+            <!-- Embed the SVG directly -->
+            <svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                </linearGradient>
+                <linearGradient id="snowflakeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#29b5e8;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#1e88e5;stop-opacity:1" />
+                </linearGradient>
+                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.3"/>
+                </filter>
+              </defs>
+              
+              <!-- Background -->
+              <rect width="1200" height="800" fill="#f8f9fa"/>
+              
+              <!-- Header -->
+              <rect x="0" y="0" width="1200" height="80" fill="url(#headerGrad)"/>
+              <text x="600" y="30" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="24" font-weight="bold">TDC Net Snowflake AI Demo - Technical Architecture</text>
+              <text x="600" y="55" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14">End-to-End AI-Powered Network Fault Resolution Platform</text>
+              
+              <!-- Data Sources -->
+              <rect x="50" y="120" width="150" height="100" rx="10" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" filter="url(#shadow)"/>
+              <text x="125" y="145" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold">Data Sources</text>
+              <text x="125" y="165" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• Network Fault Logs</text>
+              <text x="125" y="180" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• SOP Documents (PDF)</text>
+              <text x="125" y="195" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• Equipment Data</text>
+              <text x="125" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">1,000+ Records</text>
+              
+              <!-- Snowflake Platform -->
+              <rect x="300" y="100" width="600" height="300" rx="15" fill="url(#snowflakeGrad)" stroke="#0d47a1" stroke-width="3" filter="url(#shadow)"/>
+              <text x="600" y="130" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="18" font-weight="bold">❄️ SNOWFLAKE UNIFIED AI PLATFORM</text>
+              
+              <!-- Cortex Analyst -->
+              <rect x="320" y="150" width="180" height="120" rx="8" fill="white" stroke="#29b5e8" stroke-width="2"/>
+              <text x="410" y="175" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold">🧠 Machine Learning</text>
+              <text x="410" y="195" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">ML Classification</text>
+              <text x="410" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• Fault Prediction</text>
+              <text x="410" y="225" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• Priority Scoring</text>
+              <text x="410" y="240" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• 85%+ Accuracy</text>
+              <text x="410" y="255" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">SQL-Based ML</text>
+              
+              <!-- Cortex Search -->
+              <rect x="520" y="150" width="180" height="120" rx="8" fill="white" stroke="#29b5e8" stroke-width="2"/>
+              <text x="610" y="175" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold">🔍 Cortex Search</text>
+              <text x="610" y="195" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">LLM-Powered Q&A</text>
+              <text x="610" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• Document Search</text>
+              <text x="610" y="225" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• AI Summarization</text>
+              <text x="610" y="240" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• 200-char Chunks</text>
+              <text x="610" y="255" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Natural Language</text>
+              
+              <!-- Data Processing -->
+              <rect x="720" y="150" width="160" height="120" rx="8" fill="white" stroke="#29b5e8" stroke-width="2"/>
+              <text x="800" y="175" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold">⚙️ Data Pipeline</text>
+              <text x="800" y="195" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">PDF Processing</text>
+              <text x="800" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• Document Chunking</text>
+              <text x="800" y="225" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• Metadata Extract</text>
+              <text x="800" y="240" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• Auto Refresh</text>
+              <text x="800" y="255" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Snowpark + SQL</text>
+              
+              <!-- Database Layer -->
+              <rect x="320" y="290" width="560" height="80" rx="8" fill="#e8f5e8" stroke="#4caf50" stroke-width="2"/>
+              <text x="600" y="315" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold">🗄️ Unified Data Layer</text>
+              <text x="400" y="335" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">Network Faults</text>
+              <text x="500" y="335" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">SOP Documents</text>
+              <text x="600" y="335" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">ML Models</text>
+              <text x="700" y="335" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">Search Index</text>
+              <text x="800" y="335" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">Metadata</text>
+              <text x="600" y="355" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Enterprise Security &amp; Governance</text>
+              
+              <!-- Manager Dashboard -->
+              <rect x="200" y="450" width="200" height="140" rx="10" fill="#fff3e0" stroke="#ff9800" stroke-width="2" filter="url(#shadow)"/>
+              <text x="300" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold">📊 Manager Dashboard</text>
+              <text x="300" y="495" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">Vignette 1: Proactive Triage</text>
+              <text x="300" y="515" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• Real-time Fault Classification</text>
+              <text x="300" y="530" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• Priority Risk Scoring</text>
+              <text x="300" y="545" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• Technician Recommendations</text>
+              <text x="300" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• SLA Breach Prediction</text>
+              <text x="300" y="580" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Streamlit + Plotly</text>
+              
+              <!-- Field Engineer App -->
+              <rect x="500" y="450" width="200" height="140" rx="10" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2" filter="url(#shadow)"/>
+              <text x="600" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold">🔧 Field Assistant</text>
+              <text x="600" y="495" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">Vignette 2: AI Guidance</text>
+              <text x="600" y="515" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• Natural Language Queries</text>
+              <text x="600" y="530" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• Instant Repair Procedures</text>
+              <text x="600" y="545" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• Equipment-Specific Steps</text>
+              <text x="600" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">• Mobile-First Design</text>
+              <text x="600" y="580" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Responsive UI</text>
+              
+              
+              <!-- Technical Specs -->
+              <rect x="50" y="630" width="1100" height="120" rx="10" fill="#f5f5f5" stroke="#757575" stroke-width="1"/>
+              <text x="600" y="655" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold">🔧 Technical Specifications</text>
+              
+              <!-- Tech specs grid -->
+              <text x="150" y="680" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">Data Volume</text>
+              <text x="150" y="695" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">1,000 Fault Records</text>
+              <text x="150" y="710" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">5 SOP Documents</text>
+              <text x="150" y="725" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">20+ Document Chunks</text>
+              
+              <text x="350" y="680" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">ML Performance</text>
+              <text x="350" y="695" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">85%+ Classification Accuracy</text>
+              <text x="350" y="710" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">&lt;500ms Search Latency</text>
+              <text x="350" y="725" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">10min Index Refresh</text>
+              
+              <text x="550" y="680" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">Architecture</text>
+              <text x="550" y="695" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">SQL-Based ML Models</text>
+              <text x="550" y="710" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">Native Snowflake Integration</text>
+              <text x="550" y="725" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">No External Dependencies</text>
+              
+              <text x="750" y="680" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">Deployment</text>
+              <text x="750" y="695" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">Streamlit in Snowflake</text>
+              <text x="750" y="710" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">Enterprise Security</text>
+              <text x="750" y="725" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">Auto-Scaling</text>
+              
+              <text x="950" y="680" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold">Timeline</text>
+              <text x="950" y="695" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">2-week PoC Setup</text>
+              <text x="950" y="710" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">4-week Development</text>
+              <text x="950" y="725" text-anchor="middle" font-family="Arial, sans-serif" font-size="10">8-week Full Rollout</text>
+              
+              <!-- Arrows showing data flow -->
+              <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#333"/>
+                </marker>
+              </defs>
+              
+              <!-- Data Sources to Snowflake -->
+              <path d="M 200 170 L 290 170" stroke="#333" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+              
+              <!-- Snowflake to Applications -->
+              <path d="M 450 400 L 300 440" stroke="#333" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+              <path d="M 600 400 L 600 440" stroke="#333" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+              
+              <!-- Footer -->
+              <text x="600" y="780" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#666">
+                Ready for Production: Complete end-to-end solution demonstrating AI-powered network operations transformation
+              </text>
+            </svg>
+        </div>
+        
+        <div class="download-instructions">
+            <h3>💡 Alternative Methods to Get JPEG:</h3>
+            <div class="step"><strong>Method 1:</strong> Open `TDCNet_Technical_Summary.svg` in any image editor (Photoshop, GIMP, etc.) and export as JPEG</div>
+            <div class="step"><strong>Method 2:</strong> Use online SVG to JPEG converters (search "SVG to JPEG converter")</div>
+            <div class="step"><strong>Method 3:</strong> Take a screenshot of this page and crop to the diagram area</div>
+            <div class="step"><strong>Method 4:</strong> Print this page to PDF, then convert PDF to JPEG</div>
+        </div>
+    </div>
+</body>
+</html>
