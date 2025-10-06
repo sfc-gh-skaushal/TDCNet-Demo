@@ -805,10 +805,6 @@ def main():
     with tab3:
         st.markdown("### 📚 Available Procedures")
         
-        # Debug: Show what SOP documents we have
-        st.write(f"🔍 Debug: Found {len(sop_docs)} SOP documents")
-        if sop_docs:
-            st.write(f"🔍 First SOP: {sop_docs[0].get('document_id', 'NO_ID')} - {sop_docs[0].get('title', 'NO_TITLE')}")
         
         if sop_docs:
             for idx, doc in enumerate(sop_docs):
