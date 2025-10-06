@@ -314,10 +314,8 @@ def load_fault_data():
         
         # Load ML predictions from fault triage view (same as Manager Dashboard)
         try:
-            st.write("🔍 Debug: Attempting to load ML triage data...")
             triage_df = session.table("VW_FAULT_TRIAGE").to_pandas()
             triage_df.columns = triage_df.columns.str.lower()  # Normalize triage columns too
-            st.write(f"🔍 Debug: Loaded {len(triage_df)} ML triage records")
             
             # Merge ML predictions with fault data
             df = df.merge(
@@ -330,12 +328,8 @@ def load_fault_data():
             df['predicted_category'] = df['predicted_category'].fillna(df['fault_category'])
             df['calculated_priority_score'] = df['calculated_priority_score'].fillna(df['priority_score'])
             
-            # Debug: Show sample of merged data
-            sample_fault = df[df['fault_id'] == 'F000349'].iloc[0] if 'F000349' in df['fault_id'].values else df.iloc[0]
-            st.write(f"🔍 Debug: Sample fault {sample_fault['fault_id']} - Original priority: {sample_fault.get('priority_score', 'N/A')}, ML priority: {sample_fault.get('calculated_priority_score', 'N/A')}")
-            
         except Exception as ml_error:
-            st.error(f"ML predictions unavailable, using original data: {ml_error}")
+            st.warning(f"ML predictions unavailable, using original data: {ml_error}")
             # Fallback to original values
             df['predicted_category'] = df['fault_category']
             df['calculated_priority_score'] = df['priority_score']
@@ -354,7 +348,6 @@ def load_fault_data():
         # Use sample SOP documents for reliable demo experience
         # TODO: Replace with Snowflake SOP_DOCUMENT_METADATA when properly set up
         sop_docs = get_sample_sop_documents()
-        st.write(f"🔍 Debug: Loaded {len(sop_docs)} sample SOP documents")
         
         return df, sop_docs
     except Exception as e:
